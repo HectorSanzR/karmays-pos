@@ -1,0 +1,140 @@
+{
+  "_ayuda": "Esta es la carta del negocio. Edita precios o agrega platos aqui y corre 'npm run carta' para sincronizar la base. Los productos que borres de este archivo NO se eliminan: quedan inactivos para no romper el historial de ventas.",
+  "negocio": {
+    "nombre": "KarMay's Food & Drinks",
+    "telefonos": ["3022112945", "3007249968"]
+  },
+  "categorias": [
+    {
+      "nombre": "Perros calientes",
+      "productos": [
+        { "nombre": "Sencillo", "precio": 6000 },
+        { "nombre": "Mozarello", "precio": 7000 },
+        { "nombre": "Plancha", "precio": 7000 },
+        { "nombre": "Italiano", "precio": 10000 },
+        { "nombre": "Hawaiano", "precio": 11000 },
+        { "nombre": "Medio suizo", "precio": 11000 },
+        { "nombre": "Gemelo", "precio": 11000 },
+        { "nombre": "Americano", "precio": 13000 },
+        { "nombre": "Ranchero", "precio": 14000 },
+        { "nombre": "Suizo", "precio": 14000 },
+        { "nombre": "Perro mexicano", "precio": 14000 },
+        { "nombre": "Pollo", "precio": 15000 },
+        { "nombre": "Perro KarMay's", "precio": 18000 },
+        {
+          "nombre": "Perro KarMay's 2.0",
+          "precio": 20000,
+          "descripcion": "Con papas",
+          "ingredientes": ["Papas"]
+        }
+      ]
+    },
+    {
+      "nombre": "Hamburguesas",
+      "productos": [
+        { "nombre": "Carne", "precio": 22000 },
+        { "nombre": "Pollo", "precio": 22000 },
+        { "nombre": "Mixta", "precio": 26000 },
+        { "nombre": "La babosa", "precio": 30000 }
+      ]
+    },
+    {
+      "nombre": "Salchipapas",
+      "productos": [
+        { "nombre": "Sencilla", "precio": 13000 },
+        { "nombre": "Salchigratinada", "precio": 16000 },
+        {
+          "nombre": "Salchicombinado",
+          "precio": 17000,
+          "descripcion": "Chorizo y butifarra",
+          "ingredientes": ["Chorizo", "Butifarra"]
+        },
+        { "nombre": "Salchipollo", "precio": 20000 },
+        { "nombre": "Salchicerdo", "precio": 20000 },
+        { "nombre": "Salchisuiza", "precio": 20000 },
+        { "nombre": "Salchiranchera", "precio": 20000 },
+        {
+          "nombre": "Salchimixta",
+          "precio": 23000,
+          "descripcion": "Pollo y cerdo",
+          "ingredientes": ["Pollo", "Cerdo"]
+        },
+        { "nombre": "Especial", "precio": 26000 },
+        { "nombre": "Salvajada", "precio": 32000 },
+        { "nombre": "Salvajada 2 personas", "precio": 42000 },
+        { "nombre": "Salvajada 3 personas", "precio": 52000 },
+        { "nombre": "Salvajada 4 personas", "precio": 62000 }
+      ]
+    },
+    {
+      "nombre": "Mazorcas desgranadas",
+      "productos": [
+        { "nombre": "Sencilla", "precio": 13000 },
+        { "nombre": "Ranchera", "precio": 20000 },
+        { "nombre": "Suiza", "precio": 20000 },
+        { "nombre": "Pollo", "precio": 20000 },
+        { "nombre": "Cerdo", "precio": 20000 },
+        { "nombre": "Mixta", "precio": 22000 },
+        { "nombre": "Especial", "precio": 25000 }
+      ]
+    },
+    {
+      "nombre": "Picadas desgranadas",
+      "productos": [
+        { "nombre": "Pollo", "precio": 20000 },
+        { "nombre": "Cerdo", "precio": 20000 },
+        { "nombre": "Suiza", "precio": 20000 },
+        { "nombre": "Mixta", "precio": 22000 },
+        { "nombre": "Especial", "precio": 25000 },
+        { "nombre": "Costillas BBQ", "precio": 28000 }
+      ]
+    },
+    {
+      "nombre": "Sandwich",
+      "productos": [
+        { "nombre": "Jamon y queso", "precio": 10000 },
+        { "nombre": "Pollo", "precio": 17000 },
+        { "nombre": "Cerdo", "precio": 17000 },
+        { "nombre": "Mixto", "precio": 21000 },
+        {
+          "nombre": "KarMay's",
+          "precio": 25000,
+          "descripcion": "Pollo, suiza, jamon, tocineta y porcion de papa",
+          "ingredientes": ["Pollo", "Suiza", "Jamon", "Tocineta", "Papa"]
+        }
+      ]
+    },
+    {
+      "nombre": "Bebidas",
+      "productos": [
+        { "nombre": "Gaseosa personal", "precio": 0 },
+        { "nombre": "Gaseosa 1.5 LT", "precio": 0 },
+        { "nombre": "Jugo Hit personal", "precio": 0 },
+        { "nombre": "Jugo Hit litro", "precio": 0 },
+        { "nombre": "Agua", "precio": 0 }
+      ]
+    },
+    {
+      "nombre": "Adicionales",
+      "productos": [
+        { "nombre": "Grille", "precio": 2000 },
+        { "nombre": "Bollo", "precio": 2000 },
+        { "nombre": "Tocineta", "precio": 4000 },
+        { "nombre": "Maiz", "precio": 4000 },
+        { "nombre": "Gratinado", "precio": 4000 },
+        { "nombre": "Ranchera", "precio": 5000 },
+        { "nombre": "Papa francesa", "precio": 6000 },
+        { "nombre": "Suiza", "precio": 6000 }
+      ]
+    },
+    {
+      "nombre": "Adicionales salvajada",
+      "productos": [
+        { "nombre": "Grille salvajada", "precio": 3000 },
+        { "nombre": "Maiz salvajada", "precio": 5000 },
+        { "nombre": "Gratinado salvajada", "precio": 6000 },
+        { "nombre": "Gratinado maiz salvajada", "precio": 10000 }
+      ]
+    }
+  ]
+}

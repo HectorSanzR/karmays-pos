@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-fondo: #0e1116;
+  --color-panel: #161b22;
+  --color-panel2: #1e242d;
+  --color-borde: #2b333e;
+  --color-texto: #e7ecf2;
+  --color-suave: #97a3b3;
+  --color-marca: #f59e0b;
+  --color-marca2: #d97706;
+  --color-ok: #22c55e;
+  --color-alerta: #ef4444;
+  --color-info: #3b82f6;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* En pantallas tactiles no queremos seleccion accidental al pulsar rapido. */
+button,
+a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@layer components {
+  .tarjeta {
+    @apply rounded-xl border border-borde bg-panel;
+  }
+
+  /* @apply en Tailwind v4 solo acepta utilidades, no otras clases de
+     componente, por eso la base se repite en cada variante. */
+  .btn,
+  .btn-marca,
+  .btn-neutro,
+  .btn-ok,
+  .btn-peligro {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+           text-sm font-semibold transition active:scale-[.98]
+           disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-marca {
+    @apply bg-marca text-black hover:bg-marca2;
+  }
+  .btn-neutro {
+    @apply border border-borde bg-panel2 text-texto hover:border-suave;
+  }
+  .btn-ok {
+    @apply bg-ok text-black hover:brightness-110;
+  }
+  .btn-peligro {
+    @apply border border-alerta/40 bg-alerta/10 text-alerta hover:bg-alerta/20;
+  }
+
+  .campo {
+    @apply w-full rounded-lg border border-borde bg-panel2 px-3 py-2.5 text-texto
+           placeholder:text-suave/60 focus:border-marca focus:outline-none;
+  }
+
+  .etiqueta {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-suave;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
+
+/* Oculta las flechas de los input numericos: en caja estorban. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }
