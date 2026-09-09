@@ -10,6 +10,7 @@ const METODOS: [MetodoPago, string][] = [
   ['efectivo', 'Efectivo'],
   ['nequi', 'Nequi'],
   ['daviplata', 'Daviplata'],
+  ['bre_b', 'Bre-B'],
   ['tarjeta', 'Tarjeta'],
   ['transferencia', 'Otra transf.'],
 ];
@@ -145,7 +146,7 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
       <section className="tarjeta space-y-4 p-5">
         <div>
           <p className="etiqueta">Metodo de pago</p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {METODOS.map(([v, t]) => (
               <button
                 key={v}

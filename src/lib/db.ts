@@ -48,6 +48,29 @@ CREATE TABLE IF NOT EXISTS domiciliarios (
   activo   INTEGER NOT NULL DEFAULT 1
 );
 
+/**
+ * Quien entra al POS. El codigo es la llave que el dueño le entrega a cada
+ * persona; 'activo' es el permiso del dia (se apaga al cerrar el turno).
+ * Un domiciliario apunta ademas a su ficha en 'domiciliarios', que es a la
+ * que se amarran los pedidos.
+ */
+CREATE TABLE IF NOT EXISTS usuarios (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre          TEXT NOT NULL,
+  rol             TEXT NOT NULL,
+  codigo          TEXT NOT NULL UNIQUE,
+  telefono        TEXT,
+  domiciliario_id INTEGER REFERENCES domiciliarios(id),
+  activo          INTEGER NOT NULL DEFAULT 1,
+  creado_en       TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sesiones (
+  token      TEXT PRIMARY KEY,
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  creada_en  TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS caja_sesiones (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   base         INTEGER NOT NULL DEFAULT 0,
@@ -73,6 +96,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
   descuento         INTEGER NOT NULL DEFAULT 0,
   propina           INTEGER NOT NULL DEFAULT 0,
   caja_sesion_id    INTEGER REFERENCES caja_sesiones(id),
+  usuario_id        INTEGER REFERENCES usuarios(id),
   creado_en         TEXT NOT NULL,
   cerrado_en        TEXT
 );
@@ -98,6 +122,7 @@ CREATE TABLE IF NOT EXISTS pagos (
   cambio         INTEGER,
   referencia     TEXT,
   caja_sesion_id INTEGER REFERENCES caja_sesiones(id),
+  usuario_id     INTEGER REFERENCES usuarios(id),
   creado_en      TEXT NOT NULL
 );
 
@@ -121,6 +146,13 @@ function migrar(db: DatabaseSync) {
     (db.prepare(`PRAGMA table_info(${tabla})`).all() as { name: string }[]).map(
       (c) => c.name,
     );
+
+  if (!columnas('pedidos').includes('usuario_id')) {
+    db.exec('ALTER TABLE pedidos ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)');
+  }
+  if (!columnas('pagos').includes('usuario_id')) {
+    db.exec('ALTER TABLE pagos ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)');
+  }
 
   if (!columnas('pedidos').includes('domiciliario_id')) {
     db.exec(

@@ -52,6 +52,28 @@ Los `ingredientes` son los que el mesero puede quitar con un toque al editar el
 plato en la comanda ("sin tocineta"), asi que conviene listar los que la gente
 suele pedir sin.
 
+## Quien ve que
+
+Cada persona entra con un **codigo de 4 numeros** y solo ve su pantalla. La
+primera vez que se abre el POS pide crear el usuario administrador; desde ahi,
+en **Personas** se crea al resto y el sistema le genera el codigo a cada uno.
+Ese codigo se le dicta a la persona y con eso entra.
+
+| Rol | Ve | No ve |
+| --- | --- | --- |
+| **Administrador** | todo, incluidos los codigos y la caja | — |
+| **Cajero** | mesas, domicilios, cobro y caja | personas y codigos |
+| **Mesero** | solo mesas y comandas | domicilios, cobro, caja |
+| **Recepcion** | domicilios y asignacion de domiciliarios | mesas, cobro, caja |
+| **Domiciliario** | solo *sus* entregas | absolutamente todo lo demas |
+
+El permiso es **del dia**: en Personas se apaga el acceso de quien termina su
+turno y queda por fuera de inmediato, aunque tuviera la sesion abierta en el
+celular. Al dia siguiente se vuelve a encender y entra con el mismo codigo.
+El bloqueo no es solo visual — escribir la direccion a mano tampoco sirve.
+
+Si un codigo se filtra, *Cambiar* le genera otro y tumba sus sesiones.
+
 ## Como se usa
 
 **Mesas** → se toca una mesa libre y queda abierta con su comanda. Se tocan los
@@ -70,6 +92,13 @@ muestra, por persona, cuantos pedidos lleva en ruta, **cuanta plata lleva
 encima sin liquidar** y cuanto efectivo suyo ya entro a caja en el turno — que
 es lo que se necesita para cuadrar con cada uno al final. *Quitar* saca a
 alguien de la lista sin borrar su historial.
+
+**Mi ruta** (pantalla del domiciliario) → solo sus pedidos: direccion, boton
+para llamar al cliente, el detalle de lo que lleva en la bolsa y cuanto tiene
+que cobrar. Al entregar marca **por donde le pagaron** — efectivo, Nequi,
+Bre-B o transferencia — y el pedido queda saldado. Lo que cobro en efectivo
+es lo que despues tiene que entregar en caja; lo digital ya entro al negocio,
+y esa diferencia es la que muestra la pantalla de domiciliarios.
 
 **Caja** → hay que abrir la caja con la base del turno antes de poder cobrar.
 Cada cobro admite efectivo (calcula el cambio), Nequi, Daviplata, tarjeta u
@@ -92,6 +121,11 @@ src/lib/acciones.ts     escrituras (server actions)
 src/app/mesas           mapa de mesas
 src/app/domicilios      alta y seguimiento de domicilios
 src/app/domiciliarios   asignacion y liquidacion por domiciliario
+src/app/mi-ruta         pantalla del domiciliario
+src/app/usuarios        personas, roles y codigos de acceso
+src/app/entrar          ingreso con codigo
+src/lib/sesion.ts       roles, permisos y sesion
+src/proxy.ts            corta el paso a quien no ha entrado
 src/app/pedido/[id]     comanda, cobro y recibo
 src/app/caja            apertura, resumen y cierre de turno
 ```

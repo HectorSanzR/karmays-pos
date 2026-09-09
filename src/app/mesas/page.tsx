@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { exigir } from '@/lib/sesion';
 import { listarMesasConEstado } from '@/lib/consultas';
 import { irAMesa } from '@/lib/acciones';
 import { dinero, transcurrido } from '@/lib/formato';
@@ -6,7 +7,9 @@ import type { MesaConEstado } from '@/lib/tipos';
 
 export const dynamic = 'force-dynamic';
 
-export default function Mesas() {
+export default async function Mesas() {
+  await exigir('mesas');
+
   const mesas = listarMesasConEstado();
 
   const zonas = mesas.reduce<Record<string, MesaConEstado[]>>((acc, m) => {

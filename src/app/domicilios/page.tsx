@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { exigir } from '@/lib/sesion';
 import { listarDomiciliarios, listarPedidos } from '@/lib/consultas';
 import { crearPedidoDirecto } from '@/lib/acciones';
 import { dinero, transcurrido } from '@/lib/formato';
@@ -7,7 +8,9 @@ import { SelectorDomiciliario } from '@/components/SelectorDomiciliario';
 
 export const dynamic = 'force-dynamic';
 
-export default function Domicilios() {
+export default async function Domicilios() {
+  await exigir('domicilios');
+
   const activos = listarPedidos('domicilio', [
     'abierto',
     'en_cocina',

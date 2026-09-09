@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { exigir } from '@/lib/sesion';
 import { notFound } from 'next/navigation';
 import { cajaAbierta, obtenerPedido } from '@/lib/consultas';
 import { Recaudo } from '@/components/Recaudo';
@@ -10,6 +11,7 @@ export default async function PaginaCobrar({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await exigir('cobrar');
   const { id } = await params;
   const pedido = obtenerPedido(Number(id));
   if (!pedido) notFound();

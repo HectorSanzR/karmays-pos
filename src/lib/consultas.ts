@@ -11,6 +11,7 @@ import type {
   PedidoCompleto,
   PedidoItem,
   Producto,
+  Usuario,
 } from './tipos';
 
 /** node:sqlite devuelve objetos sin prototipo; React no los puede serializar. */
@@ -198,7 +199,57 @@ export function listarDomiciliarios(soloActivos = true): Domiciliario[] {
   );
 }
 
+export function listarUsuarios(): Usuario[] {
+  return planos<Usuario>(
+    db
+      .prepare('SELECT * FROM usuarios ORDER BY activo DESC, rol, nombre')
+      .all(),
+  );
+}
+
+/** Pedidos vivos de un domiciliario: lo unico que ve en su pantalla. */
+export function pedidosDeDomiciliario(domiciliarioId: number): PedidoCompleto[] {
+  const filas = db
+    .prepare(
+      `SELECT id FROM pedidos
+        WHERE domiciliario_id = ? AND estado NOT IN ('pagado', 'anulado')
+        ORDER BY id`,
+    )
+    .all(domiciliarioId) as unknown as { id: number }[];
+  return filas
+    .map((f) => obtenerPedido(f.id))
+    .filter((p): p is PedidoCompleto => p !== null);
+}
+
+/** Lo que ese domiciliario ya cobro en el turno abierto. */
+export function entregadosDeDomiciliario(domiciliarioId: number): ResumenPedido[] {
+  const sesionId = cajaAbierta()?.id ?? -1;
+  return planos<ResumenPedido>(
+    db
+      .prepare(
+        `SELECT p.*, m.nombre AS mesa_nombre, d.nombre AS domiciliario_nombre,
+                COALESCE((SELECT SUM(i.precio_unit * i.cantidad)
+                            FROM pedido_items i
+                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0)
+                  - p.descuento + p.valor_domicilio + p.propina AS total,
+                COALESCE((SELECT SUM(i.cantidad)
+                            FROM pedido_items i
+                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items
+           FROM pedidos p
+           LEFT JOIN mesas m ON m.id = p.mesa_id
+           LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id
+          WHERE p.domiciliario_id = ? AND p.estado = 'pagado'
+            AND p.caja_sesion_id = ?
+          ORDER BY p.id DESC`,
+      )
+      .all(domiciliarioId, sesionId),
+  );
+}
+
 export interface EstadoDomiciliario extends Domiciliario {
+  /** Codigo de acceso de su usuario, para que el dueño se lo pueda dictar. */
+  codigo: string | null;
+  usuario_id: number | null;
   /** Pedidos asignados que todavia no se han cobrado. */
   en_ruta: number;
   /** Plata que lleva encima sin liquidar (saldo de esos pedidos). */
@@ -215,6 +266,10 @@ export function estadoDomiciliarios(): EstadoDomiciliario[] {
     db
       .prepare(
         `SELECT d.*,
+                (SELECT u.codigo FROM usuarios u
+                  WHERE u.domiciliario_id = d.id ORDER BY u.id DESC LIMIT 1) AS codigo,
+                (SELECT u.id FROM usuarios u
+                  WHERE u.domiciliario_id = d.id ORDER BY u.id DESC LIMIT 1) AS usuario_id,
                 (SELECT COUNT(*) FROM pedidos p
                   WHERE p.domiciliario_id = d.id
                     AND p.estado NOT IN ('pagado', 'anulado')) AS en_ruta,

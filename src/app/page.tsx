@@ -1,11 +1,14 @@
 import Link from 'next/link';
+import { exigir } from '@/lib/sesion';
 import { cajaAbierta, listarMesasConEstado, listarPedidos } from '@/lib/consultas';
 import { dinero, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 
 export const dynamic = 'force-dynamic';
 
-export default function Inicio() {
+export default async function Inicio() {
+  await exigir('inicio');
+
   const caja = cajaAbierta();
   const mesas = listarMesasConEstado();
   const activos = listarPedidos(undefined, [

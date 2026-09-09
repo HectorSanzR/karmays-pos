@@ -1,4 +1,5 @@
 import { cajaAbierta, listarPedidos, resumenCaja } from '@/lib/consultas';
+import { exigir } from '@/lib/sesion';
 import { abrirCaja, cerrarCaja } from '@/lib/acciones';
 import { dinero, hora } from '@/lib/formato';
 
@@ -8,11 +9,14 @@ const nombreMetodo: Record<string, string> = {
   efectivo: 'Efectivo',
   nequi: 'Nequi',
   daviplata: 'Daviplata',
+  bre_b: 'Bre-B',
   tarjeta: 'Tarjeta',
   transferencia: 'Otra transferencia',
 };
 
-export default function Caja() {
+export default async function Caja() {
+  await exigir('caja');
+
   const sesion = cajaAbierta();
 
   if (!sesion) {

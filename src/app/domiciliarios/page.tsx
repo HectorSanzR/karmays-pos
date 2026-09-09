@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { exigir } from '@/lib/sesion';
 import {
   cajaAbierta,
   estadoDomiciliarios,
   listarPedidos,
   type ResumenPedido,
 } from '@/lib/consultas';
-import { crearDomiciliario } from '@/lib/acciones';
+import { crearUsuario } from '@/lib/acciones';
 import { dinero, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 import { BotonDesactivar } from '@/components/BotonDesactivar';
@@ -14,7 +15,9 @@ export const dynamic = 'force-dynamic';
 
 const ACTIVOS = ['abierto', 'en_cocina', 'listo', 'en_camino', 'entregado'];
 
-export default function Domiciliarios() {
+export default async function Domiciliarios() {
+  await exigir('domiciliarios');
+
   const gente = estadoDomiciliarios();
   const pedidos = listarPedidos('domicilio', ACTIVOS);
   const hayCaja = !!cajaAbierta();
@@ -33,7 +36,8 @@ export default function Domiciliarios() {
       <section className="space-y-4">
         <div className="tarjeta p-4">
           <h2 className="mb-4 text-lg font-bold">Nuevo domiciliario</h2>
-          <form action={crearDomiciliario} className="space-y-3">
+          <form action={crearUsuario} className="space-y-3">
+            <input type="hidden" name="rol" value="domiciliario" />
             <div>
               <label className="etiqueta" htmlFor="nombre">
                 Nombre
@@ -61,6 +65,9 @@ export default function Domiciliarios() {
             <button type="submit" className="btn-marca w-full">
               Agregar
             </button>
+            <p className="text-xs text-suave">
+              Al crearlo se genera su codigo de acceso, que aparece en su ficha.
+            </p>
           </form>
         </div>
 
@@ -125,6 +132,14 @@ export default function Domiciliarios() {
                       <h3 className="font-bold">{d.nombre}</h3>
                       {d.telefono && (
                         <p className="text-xs text-suave">{d.telefono}</p>
+                      )}
+                      {d.codigo && (
+                        <p className="mt-1 text-xs text-suave">
+                          Codigo:{' '}
+                          <span className="font-mono text-base font-bold tracking-widest text-marca">
+                            {d.codigo}
+                          </span>
+                        </p>
                       )}
                     </div>
                     <BotonDesactivar id={d.id} nombre={d.nombre} />

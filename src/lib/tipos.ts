@@ -13,8 +13,11 @@ export type MetodoPago =
   | 'efectivo'
   | 'nequi'
   | 'daviplata'
+  | 'bre_b'
   | 'tarjeta'
   | 'transferencia';
+
+export type Rol = 'admin' | 'cajero' | 'mesero' | 'recepcion' | 'domiciliario';
 
 export interface Categoria {
   id: number;
@@ -30,6 +33,17 @@ export interface Producto {
   descripcion: string | null;
   precio: number;
   activo: number;
+}
+
+export interface Usuario {
+  id: number;
+  nombre: string;
+  rol: Rol;
+  codigo: string;
+  telefono: string | null;
+  domiciliario_id: number | null;
+  activo: number;
+  creado_en: string;
 }
 
 export interface Domiciliario {

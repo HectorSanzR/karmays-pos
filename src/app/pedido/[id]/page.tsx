@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { exigir, puede, PERMISOS } from '@/lib/sesion';
 import {
   listarCategorias,
   listarDomiciliarios,
@@ -15,9 +16,14 @@ export default async function PaginaPedido({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const usuario = await exigir();
   const { id } = await params;
   const pedido = obtenerPedido(Number(id));
   if (!pedido) notFound();
+
+  // Un mesero no abre la comanda de un domicilio, ni la recepcion la de una mesa.
+  const seccion = pedido.tipo === 'mesa' ? 'mesas' : 'domicilios';
+  if (!puede(usuario, seccion)) redirect(PERMISOS[usuario.rol].inicio);
 
   return (
     <TomaPedido
