@@ -21,16 +21,20 @@ export function nombreMetodo(m: string): string {
   return NOMBRE_METODO[m] ?? m;
 }
 
-/** Medianoche de hoy en hora local, en el formato en que se guardan las fechas. */
-export function inicioDelDia(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
 
 export function hora(iso: string | null): string {
   if (!iso) return '';
   return new Date(iso).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function fecha(iso: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('es-CO', {
+    day: 'numeric',
+    month: 'short',
     hour: '2-digit',
     minute: '2-digit',
   });

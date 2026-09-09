@@ -12,6 +12,7 @@ const ENLACES: { seccion: string; href: string; texto: string }[] = [
   { seccion: 'domicilios', href: '/domicilios', texto: 'Domicilios' },
   { seccion: 'domiciliarios', href: '/domiciliarios', texto: 'Domiciliarios' },
   { seccion: 'caja', href: '/caja', texto: 'Caja' },
+  { seccion: 'historial', href: '/historial', texto: 'Historial' },
   { seccion: 'usuarios', href: '/usuarios', texto: 'Personas' },
 ];
 

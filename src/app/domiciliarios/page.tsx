@@ -3,14 +3,14 @@ import { exigir } from '@/lib/sesion';
 import {
   cajaAbierta,
   controlDomiciliarios,
-  entregasDelDia,
+  entregasDelTurno,
   listarPedidos,
   type ControlDomiciliario,
-  type EntregaDelDia,
+  type EntregaDelTurno,
   type ResumenPedido,
 } from '@/lib/consultas';
 import { crearUsuario } from '@/lib/acciones';
-import { dinero, hora, inicioDelDia, nombreMetodo, transcurrido } from '@/lib/formato';
+import { dinero, hora, nombreMetodo, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 import { BotonDesactivar } from '@/components/BotonDesactivar';
 
@@ -21,11 +21,12 @@ const ACTIVOS = ['abierto', 'en_cocina', 'listo', 'en_camino', 'entregado'];
 export default async function Domiciliarios() {
   await exigir('domiciliarios');
 
-  const desde = inicioDelDia();
-  const gente = controlDomiciliarios(desde);
-  const entregas = entregasDelDia(desde);
+  // El corte es el turno de caja, que abre y cierra el dueño: puede pasar de
+  // la medianoche y no tiene por que coincidir con la fecha.
+  const caja = cajaAbierta();
+  const gente = controlDomiciliarios(caja?.id ?? null);
+  const entregas = entregasDelTurno(caja?.id ?? null);
   const pedidos = listarPedidos('domicilio', ACTIVOS);
-  const hayCaja = !!cajaAbierta();
 
   const porPersona = pedidos.reduce<Record<number, ResumenPedido[]>>((acc, p) => {
     if (p.domiciliario_id) (acc[p.domiciliario_id] ??= []).push(p);
@@ -33,15 +34,15 @@ export default async function Domiciliarios() {
   }, {});
   const sinAsignar = pedidos.filter((p) => !p.domiciliario_id);
 
-  // Totales del dia sumando a todo el mundo.
+  // Totales del turno sumando a todo el mundo.
   const totales = gente.reduce(
     (acc, d) => {
-      acc.cobrado += d.cobrado_hoy;
-      acc.efectivo += d.efectivo_hoy;
-      acc.digital += d.digital_hoy;
+      acc.cobrado += d.cobrado_turno;
+      acc.efectivo += d.efectivo_turno;
+      acc.digital += d.digital_turno;
       acc.enCalle += d.por_cobrar;
-      acc.entregas += d.entregas_hoy;
-      acc.domicilios += d.domicilios_hoy;
+      acc.entregas += d.entregas_turno;
+      acc.domicilios += d.domicilios_turno;
       for (const m of d.porMetodo) {
         acc.metodos[m.metodo] = (acc.metodos[m.metodo] ?? 0) + m.monto;
       }
@@ -65,7 +66,7 @@ export default async function Domiciliarios() {
       <section className="space-y-4">
         <div className="tarjeta p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-suave">
-            Domicilios de hoy
+            Domicilios del turno
           </h2>
           <p className="mt-1 text-3xl font-bold text-marca">{dinero(totales.cobrado)}</p>
           <p className="text-xs text-suave">{totales.entregas} entregas cobradas</p>
@@ -81,7 +82,7 @@ export default async function Domiciliarios() {
             </dl>
           ) : (
             <p className="mt-4 border-t border-borde pt-3 text-sm text-suave">
-              Todavia no han cobrado nada hoy.
+              Todavia no han cobrado nada en este turno.
             </p>
           )}
 
@@ -108,7 +109,7 @@ export default async function Domiciliarios() {
             </div>
           </dl>
 
-          {!hayCaja && (
+          {!caja && (
             <p className="mt-3 text-xs text-marca">
               La caja esta cerrada: nadie puede registrar cobros ahora mismo.
             </p>
@@ -205,7 +206,7 @@ function Ficha({
 }: {
   d: ControlDomiciliario;
   enRuta: ResumenPedido[];
-  entregas: EntregaDelDia[];
+  entregas: EntregaDelTurno[];
 }) {
   return (
     <div className="tarjeta flex flex-col p-4">
@@ -227,11 +228,11 @@ function Ficha({
 
       <div className="mt-4 flex items-end justify-between border-t border-borde pt-3">
         <div>
-          <p className="text-xs text-suave">Cobrado hoy</p>
-          <p className="text-2xl font-bold text-marca">{dinero(d.cobrado_hoy)}</p>
+          <p className="text-xs text-suave">Cobrado en el turno</p>
+          <p className="text-2xl font-bold text-marca">{dinero(d.cobrado_turno)}</p>
         </div>
         <p className="text-sm text-suave">
-          {d.entregas_hoy} entrega{d.entregas_hoy === 1 ? '' : 's'} · {d.en_ruta} en ruta
+          {d.entregas_turno} entrega{d.entregas_turno === 1 ? '' : 's'} · {d.en_ruta} en ruta
         </p>
       </div>
 
@@ -252,7 +253,7 @@ function Ficha({
       <dl className="mt-3 space-y-1 border-t border-borde pt-3 text-sm">
         <div className="flex justify-between">
           <dt className="text-suave">Efectivo que debe entregar</dt>
-          <dd className="text-base font-bold text-ok">{dinero(d.efectivo_hoy)}</dd>
+          <dd className="text-base font-bold text-ok">{dinero(d.efectivo_turno)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-suave">Lleva sin cobrar</dt>
@@ -260,7 +261,7 @@ function Ficha({
         </div>
         <div className="flex justify-between">
           <dt className="text-suave">Cobrado en domicilios</dt>
-          <dd className="font-semibold">{dinero(d.domicilios_hoy)}</dd>
+          <dd className="font-semibold">{dinero(d.domicilios_turno)}</dd>
         </div>
       </dl>
 
@@ -291,7 +292,7 @@ function Ficha({
       {entregas.length > 0 && (
         <details className="mt-3 border-t border-borde pt-3">
           <summary className="cursor-pointer text-xs font-semibold text-suave">
-            Ver las {entregas.length} entregas de hoy
+            Ver las {entregas.length} entregas del turno
           </summary>
           <ul className="mt-2 space-y-1 text-xs">
             {entregas.map((e) => (

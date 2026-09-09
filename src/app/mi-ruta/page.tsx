@@ -3,7 +3,6 @@ import {
   controlDomiciliarios,
   pedidosDeDomiciliario,
 } from '@/lib/consultas';
-import { inicioDelDia } from '@/lib/formato';
 import { exigir } from '@/lib/sesion';
 import { MiRuta } from '@/components/MiRuta';
 
@@ -20,7 +19,8 @@ export default async function PaginaMiRuta() {
     );
   }
 
-  const mio = controlDomiciliarios(inicioDelDia()).find(
+  const caja = cajaAbierta();
+  const mio = controlDomiciliarios(caja?.id ?? null).find(
     (d) => d.id === usuario.domiciliario_id,
   );
 
@@ -28,11 +28,11 @@ export default async function PaginaMiRuta() {
     <MiRuta
       pedidos={pedidosDeDomiciliario(usuario.domiciliario_id)}
       porCobrar={mio?.por_cobrar ?? 0}
-      efectivoHoy={mio?.efectivo_hoy ?? 0}
-      cobradoHoy={mio?.cobrado_hoy ?? 0}
-      entregasHoy={mio?.entregas_hoy ?? 0}
+      efectivoTurno={mio?.efectivo_turno ?? 0}
+      cobradoTurno={mio?.cobrado_turno ?? 0}
+      entregasTurno={mio?.entregas_turno ?? 0}
       porMetodo={mio?.porMetodo ?? []}
-      hayCaja={!!cajaAbierta()}
+      hayCaja={!!caja}
     />
   );
 }

@@ -18,9 +18,9 @@ const METODOS: [MetodoPago, string][] = [
 interface Props {
   pedidos: PedidoCompleto[];
   porCobrar: number;
-  efectivoHoy: number;
-  cobradoHoy: number;
-  entregasHoy: number;
+  efectivoTurno: number;
+  cobradoTurno: number;
+  entregasTurno: number;
   porMetodo: CobroMetodo[];
   hayCaja: boolean;
 }
@@ -28,19 +28,19 @@ interface Props {
 export function MiRuta({
   pedidos,
   porCobrar,
-  efectivoHoy,
-  cobradoHoy,
-  entregasHoy,
+  efectivoTurno,
+  cobradoTurno,
+  entregasTurno,
   porMetodo,
   hayCaja,
 }: Props) {
   return (
     <div className="mx-auto max-w-lg space-y-4 p-4">
       <div className="tarjeta p-5">
-        <p className="text-xs text-suave">Cobrado hoy</p>
-        <p className="mt-1 text-3xl font-bold text-marca">{dinero(cobradoHoy)}</p>
+        <p className="text-xs text-suave">Cobrado en el turno</p>
+        <p className="mt-1 text-3xl font-bold text-marca">{dinero(cobradoTurno)}</p>
         <p className="text-xs text-suave">
-          {entregasHoy} entrega{entregasHoy === 1 ? '' : 's'}
+          {entregasTurno} entrega{entregasTurno === 1 ? '' : 's'}
         </p>
 
         {porMetodo.length > 0 && (
@@ -60,7 +60,7 @@ export function MiRuta({
         <dl className="mt-3 space-y-1 border-t border-borde pt-3 text-sm">
           <div className="flex justify-between">
             <dt className="text-suave">Efectivo que debes entregar</dt>
-            <dd className="text-base font-bold text-ok">{dinero(efectivoHoy)}</dd>
+            <dd className="text-base font-bold text-ok">{dinero(efectivoTurno)}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-suave">Te falta cobrar</dt>

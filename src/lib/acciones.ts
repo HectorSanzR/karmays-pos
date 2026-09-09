@@ -184,8 +184,9 @@ export async function actualizarPedido(formData: FormData) {
 
 export async function anularPedido(pedidoId: number) {
   db.prepare(
-    `UPDATE pedidos SET estado = 'anulado', cerrado_en = ? WHERE id = ?`,
-  ).run(ahora(), pedidoId);
+    `UPDATE pedidos SET estado = 'anulado', cerrado_en = ?, caja_sesion_id = ?
+      WHERE id = ?`,
+  ).run(ahora(), cajaAbierta()?.id ?? null, pedidoId);
   refrescar();
   redirect('/');
 }

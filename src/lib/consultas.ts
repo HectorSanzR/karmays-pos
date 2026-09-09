@@ -229,14 +229,10 @@ export interface EstadoDomiciliario extends Domiciliario {
   en_ruta: number;
   /** Plata que lleva encima sin liquidar (saldo de esos pedidos). */
   por_cobrar: number;
-  /** Efectivo de sus pedidos ya cobrado en el turno actual. */
-  efectivo_turno: number;
-  entregados: number;
 }
 
-/** Estado de cada domiciliario en el turno abierto (o cero si no hay caja). */
+/** Quien es cada domiciliario y que lleva en la calle ahora mismo. */
 export function estadoDomiciliarios(): EstadoDomiciliario[] {
-  const sesionId = cajaAbierta()?.id ?? -1;
   return planos<EstadoDomiciliario>(
     db
       .prepare(
@@ -258,22 +254,12 @@ export function estadoDomiciliarios(): EstadoDomiciliario[] {
                                  WHERE g.pedido_id = p.id), 0))
                     FROM pedidos p
                    WHERE p.domiciliario_id = d.id
-                     AND p.estado NOT IN ('pagado', 'anulado')), 0) AS por_cobrar,
-                COALESCE((
-                  SELECT SUM(g.monto) FROM pagos g
-                    JOIN pedidos p ON p.id = g.pedido_id
-                   WHERE p.domiciliario_id = d.id
-                     AND g.metodo = 'efectivo'
-                     AND g.caja_sesion_id = ?), 0) AS efectivo_turno,
-                (SELECT COUNT(*) FROM pedidos p
-                  WHERE p.domiciliario_id = d.id
-                    AND p.estado = 'pagado'
-                    AND p.caja_sesion_id = ?) AS entregados
+                     AND p.estado NOT IN ('pagado', 'anulado')), 0) AS por_cobrar
            FROM domiciliarios d
           WHERE d.activo = 1
           ORDER BY d.nombre`,
       )
-      .all(sesionId, sesionId),
+      .all(),
   );
 }
 
@@ -286,41 +272,48 @@ export interface CobroMetodo {
 }
 
 export interface ControlDomiciliario extends EstadoDomiciliario {
-  entregas_hoy: number;
-  cobrado_hoy: number;
+  entregas_turno: number;
+  cobrado_turno: number;
   /** Lo que se cobro por domicilios, para liquidarle su parte. */
-  domicilios_hoy: number;
+  domicilios_turno: number;
   porMetodo: CobroMetodo[];
-  efectivo_hoy: number;
+  efectivo_turno: number;
   /** Nequi, Bre-B, transferencia, tarjeta: entro al negocio directo. */
-  digital_hoy: number;
+  digital_turno: number;
 }
 
 /**
- * Lo que cada domiciliario movio desde `desde`, abierto por medio de pago.
- * Es la foto que hace falta para cuadrar con cada uno al final del dia.
+ * Lo que cada domiciliario movio en un turno de caja, abierto por medio de
+ * pago. El turno lo abre y lo cierra el dueño y puede pasarse de la
+ * medianoche, asi que el corte no es por fecha sino por sesion de caja.
  */
-export function controlDomiciliarios(desde: string): ControlDomiciliario[] {
+export function controlDomiciliarios(sesionId: number | null): ControlDomiciliario[] {
   const cobros = db
     .prepare(
       `SELECT p.domiciliario_id AS did, g.metodo,
               SUM(g.monto) AS monto, COUNT(*) AS n
          FROM pagos g
          JOIN pedidos p ON p.id = g.pedido_id
-        WHERE p.domiciliario_id IS NOT NULL AND g.creado_en >= ?
+        WHERE p.domiciliario_id IS NOT NULL AND g.caja_sesion_id = ?
         GROUP BY p.domiciliario_id, g.metodo`,
     )
-    .all(desde) as unknown as { did: number; metodo: string; monto: number; n: number }[];
+    .all(sesionId ?? -1) as unknown as {
+    did: number;
+    metodo: string;
+    monto: number;
+    n: number;
+  }[];
 
   const entregas = db
     .prepare(
       `SELECT domiciliario_id AS did, COUNT(*) AS n,
               COALESCE(SUM(valor_domicilio), 0) AS domicilios
          FROM pedidos
-        WHERE domiciliario_id IS NOT NULL AND estado = 'pagado' AND cerrado_en >= ?
+        WHERE domiciliario_id IS NOT NULL AND estado = 'pagado'
+          AND caja_sesion_id = ?
         GROUP BY domiciliario_id`,
     )
-    .all(desde) as unknown as { did: number; n: number; domicilios: number }[];
+    .all(sesionId ?? -1) as unknown as { did: number; n: number; domicilios: number }[];
 
   return estadoDomiciliarios().map((d) => {
     const suyos = cobros.filter((c) => c.did === d.id);
@@ -332,11 +325,11 @@ export function controlDomiciliarios(desde: string): ControlDomiciliario[] {
 
     return {
       ...d,
-      entregas_hoy: entrega?.n ?? 0,
-      domicilios_hoy: entrega?.domicilios ?? 0,
-      cobrado_hoy: cobrado,
-      efectivo_hoy: efectivo,
-      digital_hoy: cobrado - efectivo,
+      entregas_turno: entrega?.n ?? 0,
+      domicilios_turno: entrega?.domicilios ?? 0,
+      cobrado_turno: cobrado,
+      efectivo_turno: efectivo,
+      digital_turno: cobrado - efectivo,
       porMetodo: suyos
         .map(({ metodo, monto, n }) => ({ metodo, monto, n }))
         .sort((a, b) => b.monto - a.monto),
@@ -344,7 +337,7 @@ export function controlDomiciliarios(desde: string): ControlDomiciliario[] {
   });
 }
 
-export interface EntregaDelDia {
+export interface EntregaDelTurno {
   id: number;
   domiciliario_id: number;
   cliente_nombre: string | null;
@@ -355,8 +348,8 @@ export interface EntregaDelDia {
 }
 
 /** Una linea por entrega cobrada, para poder revisar peso por peso. */
-export function entregasDelDia(desde: string): EntregaDelDia[] {
-  return planos<EntregaDelDia>(
+export function entregasDelTurno(sesionId: number | null): EntregaDelTurno[] {
+  return planos<EntregaDelTurno>(
     db
       .prepare(
         `SELECT p.id, p.domiciliario_id, p.cliente_nombre, p.cliente_direccion,
@@ -368,10 +361,130 @@ export function entregasDelDia(desde: string): EntregaDelDia[] {
            FROM pedidos p
           WHERE p.domiciliario_id IS NOT NULL
             AND p.estado = 'pagado'
-            AND p.cerrado_en >= ?
+            AND p.caja_sesion_id = ?
           ORDER BY p.cerrado_en DESC`,
       )
-      .all(desde),
+      .all(sesionId ?? -1),
+  );
+}
+
+/* ------------------------------------------------------------ historial -- */
+
+export interface TurnoResumen extends CajaSesion {
+  ventas: number;
+  pedidos: number;
+}
+
+/** Los turnos de caja, del mas reciente al mas viejo. */
+export function listarTurnos(): TurnoResumen[] {
+  return planos<TurnoResumen>(
+    db
+      .prepare(
+        `SELECT c.*,
+                COALESCE((SELECT SUM(g.monto) FROM pagos g
+                           WHERE g.caja_sesion_id = c.id), 0) AS ventas,
+                (SELECT COUNT(*) FROM pedidos p
+                  WHERE p.caja_sesion_id = c.id AND p.estado = 'pagado') AS pedidos
+           FROM caja_sesiones c
+          ORDER BY c.id DESC`,
+      )
+      .all(),
+  );
+}
+
+export interface PedidoHistorial {
+  id: number;
+  tipo: string;
+  estado: string;
+  mesa_nombre: string | null;
+  cliente_nombre: string | null;
+  domiciliario_nombre: string | null;
+  creado_en: string;
+  cerrado_en: string | null;
+  total: number;
+  items: number;
+  metodos: string | null;
+  cobrado_por: string | null;
+}
+
+/**
+ * Los pedidos que ya se cerraron, cobrados y anulados. `sesionId` null trae
+ * todo el historial; con un turno, solo el de ese turno.
+ */
+export function historialPedidos(sesionId: number | null, limite = 500): PedidoHistorial[] {
+  const filtro = sesionId === null ? '' : 'AND p.caja_sesion_id = ?';
+  const args = sesionId === null ? [limite] : [sesionId, limite];
+
+  return planos<PedidoHistorial>(
+    db
+      .prepare(
+        `SELECT p.id, p.tipo, p.estado, p.creado_en, p.cerrado_en,
+                m.nombre AS mesa_nombre, p.cliente_nombre,
+                d.nombre AS domiciliario_nombre,
+                COALESCE((SELECT SUM(i.precio_unit * i.cantidad)
+                            FROM pedido_items i
+                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0)
+                  - p.descuento + p.valor_domicilio + p.propina AS total,
+                COALESCE((SELECT SUM(i.cantidad)
+                            FROM pedido_items i
+                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items,
+                (SELECT GROUP_CONCAT(DISTINCT g.metodo) FROM pagos g
+                  WHERE g.pedido_id = p.id) AS metodos,
+                (SELECT u.nombre FROM pagos g
+                   LEFT JOIN usuarios u ON u.id = g.usuario_id
+                  WHERE g.pedido_id = p.id
+                  ORDER BY g.id DESC LIMIT 1) AS cobrado_por
+           FROM pedidos p
+           LEFT JOIN mesas m ON m.id = p.mesa_id
+           LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id
+          WHERE p.estado IN ('pagado', 'anulado') ${filtro}
+          ORDER BY COALESCE(p.cerrado_en, p.creado_en) DESC
+          LIMIT ?`,
+      )
+      .all(...args),
+  );
+}
+
+export interface ProductoVendido {
+  nombre: string;
+  cantidad: number;
+  monto: number;
+}
+
+/** Que se vendio y cuanto, para saber que se mueve y que no. */
+export function productosVendidos(sesionId: number | null): ProductoVendido[] {
+  const filtro = sesionId === null ? '' : 'AND p.caja_sesion_id = ?';
+  const args = sesionId === null ? [] : [sesionId];
+
+  return planos<ProductoVendido>(
+    db
+      .prepare(
+        `SELECT i.nombre,
+                SUM(i.cantidad) AS cantidad,
+                SUM(i.cantidad * i.precio_unit) AS monto
+           FROM pedido_items i
+           JOIN pedidos p ON p.id = i.pedido_id
+          WHERE p.estado = 'pagado' AND i.estado <> 'anulado' ${filtro}
+          GROUP BY i.nombre
+          ORDER BY cantidad DESC, monto DESC`,
+      )
+      .all(...args),
+  );
+}
+
+export function cobrosPorMetodo(sesionId: number | null): CobroMetodo[] {
+  const filtro = sesionId === null ? '' : 'WHERE caja_sesion_id = ?';
+  const args = sesionId === null ? [] : [sesionId];
+
+  return planos<CobroMetodo>(
+    db
+      .prepare(
+        `SELECT metodo, SUM(monto) AS monto, COUNT(*) AS n
+           FROM pagos ${filtro}
+          GROUP BY metodo
+          ORDER BY monto DESC`,
+      )
+      .all(...args),
   );
 }
 

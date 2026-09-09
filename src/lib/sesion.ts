@@ -15,6 +15,7 @@ export type Seccion =
   | 'mi-ruta'
   | 'cobrar'
   | 'caja'
+  | 'historial'
   | 'usuarios';
 
 interface Permiso {
@@ -35,13 +36,22 @@ export const PERMISOS: Record<Rol, Permiso> = {
       'domiciliarios',
       'cobrar',
       'caja',
+      'historial',
       'usuarios',
     ],
   },
   cajero: {
     inicio: '/',
     etiqueta: 'Caja',
-    secciones: ['inicio', 'mesas', 'domicilios', 'domiciliarios', 'cobrar', 'caja'],
+    secciones: [
+      'inicio',
+      'mesas',
+      'domicilios',
+      'domiciliarios',
+      'cobrar',
+      'caja',
+      'historial',
+    ],
   },
   mesero: {
     inicio: '/mesas',

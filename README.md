@@ -62,7 +62,7 @@ Ese codigo se le dicta a la persona y con eso entra.
 | Rol | Ve | No ve |
 | --- | --- | --- |
 | **Administrador** | todo, incluidos los codigos y la caja | — |
-| **Cajero** | mesas, domicilios, cobro y caja | personas y codigos |
+| **Cajero** | mesas, domicilios, cobro, caja e historial | personas y codigos |
 | **Mesero** | solo mesas y comandas | domicilios, cobro, caja |
 | **Recepcion** | domicilios y asignacion de domiciliarios | mesas, cobro, caja |
 | **Domiciliario** | solo *sus* entregas | absolutamente todo lo demas |
@@ -90,12 +90,12 @@ domicilio se les asigna desde la lista de domicilios: se elige la persona en el
 desplegable y *Despachar* lo manda a "en camino". *Quitar* saca a alguien de la
 lista sin borrar su historial.
 
-Esta pantalla es el control del dia. Arriba va el consolidado —cuanto se cobro
-en domicilios hoy, abierto por medio de pago, cuanto efectivo hay por recibir,
-cuanto ya entro al negocio y cuanto sigue en la calle— y abajo la ficha de cada
-persona con lo mismo a su nombre:
+Esta pantalla es el control del turno. Arriba va el consolidado —cuanto se
+cobro en domicilios, abierto por medio de pago, cuanto efectivo hay por
+recibir, cuanto ya entro al negocio y cuanto sigue en la calle— y abajo la
+ficha de cada persona con lo mismo a su nombre:
 
-- **Cobrado hoy** y cuantas entregas hizo.
+- **Cobrado en el turno** y cuantas entregas hizo.
 - El desglose por **Efectivo, Nequi, Bre-B, transferencia**, con el numero de
   cobros de cada uno.
 - **Efectivo que debe entregar**: la plata fisica que trae encima. Lo digital
@@ -103,7 +103,7 @@ persona con lo mismo a su nombre:
 - **Lleva sin cobrar**: lo que todavia anda en la calle sin pagar.
 - **Cobrado en domicilios**: la suma de los valores de domicilio, si le pagas
   por entrega.
-- La lista de sus entregas del dia, una por una, con hora, cliente, medio de
+- La lista de sus entregas del turno, una por una, con hora, cliente, medio de
   pago y monto.
 
 El mismo corte lo ve el domiciliario en su pantalla, para que no haya discusion
@@ -115,6 +115,13 @@ que cobrar. Al entregar marca **por donde le pagaron** — efectivo, Nequi,
 Bre-B o transferencia — y el pedido queda saldado. Lo que cobro en efectivo
 es lo que despues tiene que entregar en caja; lo digital ya entro al negocio,
 y esa diferencia es la que muestra la pantalla de domiciliarios.
+
+**Historial** → todo lo que se ha vendido, sin que se borre nada. Se elige el
+turno arriba (o *Todo el historial*) y se ve cuanto se vendio, el desglose por
+medio de pago, cuanto salio por mesa y cuanto por domicilio, la lista de
+pedidos uno por uno —hora, mesa o cliente, domiciliario, medio de pago, quien
+cobro y total, con los anulados tachados— y el ranking de lo que mas se
+vendio. Tocando el numero del pedido se abre su recibo.
 
 **Caja** → hay que abrir la caja con la base del turno antes de poder cobrar.
 Cada cobro admite efectivo (calcula el cambio), Nequi, Daviplata, tarjeta u
@@ -144,4 +151,5 @@ src/lib/sesion.ts       roles, permisos y sesion
 src/proxy.ts            corta el paso a quien no ha entrado
 src/app/pedido/[id]     comanda, cobro y recibo
 src/app/caja            apertura, resumen y cierre de turno
+src/app/historial       ventas por turno, pedidos y lo mas vendido
 ```
