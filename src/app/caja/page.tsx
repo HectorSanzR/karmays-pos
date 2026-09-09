@@ -54,7 +54,7 @@ export default async function Caja() {
 
   return (
     <div className="mx-auto grid max-w-5xl gap-4 p-4 lg:grid-cols-2">
-      <section className="tarjeta space-y-4 p-6">
+      <section className="tarjeta min-w-0 space-y-4 p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">Caja del turno</h1>
           <span className="chip bg-ok/15 text-ok">Abierta {hora(sesion.abierta_en)}</span>
@@ -88,7 +88,7 @@ export default async function Caja() {
         </div>
       </section>
 
-      <section className="tarjeta h-fit space-y-4 p-6">
+      <section className="tarjeta h-fit min-w-0 space-y-4 p-6">
         <h2 className="text-lg font-bold">Cierre de caja</h2>
 
         {abiertos.length > 0 ? (

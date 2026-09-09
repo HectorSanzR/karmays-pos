@@ -75,6 +75,12 @@ a {
   }
 }
 
+/* Los textarea se pueden arrastrar y, a lo ancho, romperian el ancho de la
+   pagina en un celular. Solo se estiran hacia abajo. */
+textarea {
+  resize: vertical;
+}
+
 /* Oculta las flechas de los input numericos: en caja estorban. */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {

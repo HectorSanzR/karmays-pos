@@ -20,7 +20,7 @@ export default async function Usuarios() {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[340px_1fr]">
-      <section className="tarjeta h-fit p-4">
+      <section className="tarjeta h-fit min-w-0 p-4">
         <h2 className="mb-1 text-lg font-bold">Nueva persona</h2>
         <p className="mb-4 text-sm text-suave">
           Al crearla se genera un codigo de 4 numeros. Ese codigo es su llave:
@@ -63,7 +63,7 @@ export default async function Usuarios() {
         </form>
       </section>
 
-      <section className="tarjeta overflow-hidden">
+      <section className="tarjeta min-w-0 overflow-hidden">
         <h2 className="border-b border-borde px-4 py-3 font-semibold">
           Personas ({gente.length})
         </h2>

@@ -23,7 +23,7 @@ export default async function Domicilios() {
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[380px_1fr]">
-      <section className="tarjeta h-fit p-4">
+      <section className="tarjeta h-fit min-w-0 p-4">
         <h2 className="mb-4 text-lg font-bold">Nuevo domicilio</h2>
         <form action={crearPedidoDirecto} className="space-y-3">
           <input type="hidden" name="tipo" value="domicilio" />
@@ -96,9 +96,9 @@ export default async function Domicilios() {
         </form>
       </section>
 
-      <section className="space-y-4">
+      <section className="min-w-0 space-y-4">
         <div className="tarjeta overflow-hidden">
-          <h2 className="flex items-center justify-between border-b border-borde px-4 py-3 font-semibold">
+          <h2 className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-4 py-3 font-semibold">
             <span>En curso ({activos.length})</span>
             <Link href="/domiciliarios" className="text-xs font-normal text-suave hover:text-marca">
               Domiciliarios y liquidacion →

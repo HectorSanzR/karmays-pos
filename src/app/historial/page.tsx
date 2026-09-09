@@ -137,7 +137,7 @@ export default async function Historial({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <section className="tarjeta overflow-hidden">
+        <section className="tarjeta min-w-0 overflow-hidden">
           <h2 className="border-b border-borde px-4 py-3 font-semibold">
             Pedidos ({pedidos.length})
           </h2>
@@ -183,7 +183,7 @@ export default async function Historial({
           )}
         </section>
 
-        <section className="tarjeta h-fit overflow-hidden">
+        <section className="tarjeta h-fit min-w-0 overflow-hidden">
           <h2 className="border-b border-borde px-4 py-3 font-semibold">
             Lo que mas se vendio
           </h2>

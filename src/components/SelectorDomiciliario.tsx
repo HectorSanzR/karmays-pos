@@ -33,7 +33,7 @@ export function SelectorDomiciliario({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         aria-label="Domiciliario asignado"
         disabled={pendiente}
@@ -43,7 +43,7 @@ export function SelectorDomiciliario({
             void asignarDomiciliario(pedidoId, Number(e.target.value) || null),
           )
         }
-        className={`campo py-1.5 text-sm ${
+        className={`campo min-w-0 flex-1 py-2 text-sm ${
           asignadoA ? 'border-info/50 text-texto' : 'text-suave'
         }`}
       >

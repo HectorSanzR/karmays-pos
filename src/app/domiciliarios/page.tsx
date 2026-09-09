@@ -63,7 +63,7 @@ export default async function Domiciliarios() {
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[340px_1fr]">
-      <section className="space-y-4">
+      <section className="min-w-0 space-y-4">
         <div className="tarjeta p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-suave">
             Domicilios del turno
@@ -154,7 +154,7 @@ export default async function Domiciliarios() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="min-w-0 space-y-4">
         {sinAsignar.length > 0 && (
           <div className="tarjeta border-marca/40 p-4">
             <h2 className="mb-2 font-semibold text-marca">
