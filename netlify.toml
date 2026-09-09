@@ -1,0 +1,11 @@
+# Netlify construye el Next.js con su plugin oficial; no hay que configurar
+# rutas ni funciones a mano.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"

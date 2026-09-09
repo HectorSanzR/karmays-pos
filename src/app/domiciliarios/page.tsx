@@ -23,10 +23,10 @@ export default async function Domiciliarios() {
 
   // El corte es el turno de caja, que abre y cierra el dueño: puede pasar de
   // la medianoche y no tiene por que coincidir con la fecha.
-  const caja = cajaAbierta();
-  const gente = controlDomiciliarios(caja?.id ?? null);
-  const entregas = entregasDelTurno(caja?.id ?? null);
-  const pedidos = listarPedidos('domicilio', ACTIVOS);
+  const caja = await cajaAbierta();
+  const gente = await controlDomiciliarios(caja?.id ?? null);
+  const entregas = await entregasDelTurno(caja?.id ?? null);
+  const pedidos = await listarPedidos('domicilio', ACTIVOS);
 
   const porPersona = pedidos.reduce<Record<number, ResumenPedido[]>>((acc, p) => {
     if (p.domiciliario_id) (acc[p.domiciliario_id] ??= []).push(p);

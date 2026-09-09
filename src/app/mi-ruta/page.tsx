@@ -19,14 +19,14 @@ export default async function PaginaMiRuta() {
     );
   }
 
-  const caja = cajaAbierta();
-  const mio = controlDomiciliarios(caja?.id ?? null).find(
+  const caja = await cajaAbierta();
+  const mio = (await controlDomiciliarios(caja?.id ?? null)).find(
     (d) => d.id === usuario.domiciliario_id,
   );
 
   return (
     <MiRuta
-      pedidos={pedidosDeDomiciliario(usuario.domiciliario_id)}
+      pedidos={await pedidosDeDomiciliario(usuario.domiciliario_id)}
       porCobrar={mio?.por_cobrar ?? 0}
       efectivoTurno={mio?.efectivo_turno ?? 0}
       cobradoTurno={mio?.cobrado_turno ?? 0}

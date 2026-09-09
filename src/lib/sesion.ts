@@ -79,13 +79,9 @@ export async function usuarioActual(): Promise<Usuario | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
 
-  const fila = db
-    .prepare(
-      `SELECT u.* FROM sesiones s
+  const fila = await db.get(`SELECT u.* FROM sesiones s
          JOIN usuarios u ON u.id = s.usuario_id
-        WHERE s.token = ? AND u.activo = 1`,
-    )
-    .get(token);
+        WHERE s.token = ? AND u.activo = 1`, token);
   return fila ? ({ ...(fila as object) } as Usuario) : null;
 }
 
@@ -102,16 +98,16 @@ export async function exigir(seccion?: Seccion): Promise<Usuario> {
 }
 
 /** Codigo de 4 digitos que no este en uso. */
-export function generarCodigo(): string {
+export async function generarCodigo(): Promise<string> {
   for (let i = 0; i < 200; i++) {
     const codigo = String(Math.floor(1000 + Math.random() * 9000));
-    const usado = db.prepare('SELECT 1 FROM usuarios WHERE codigo = ?').get(codigo);
+    const usado = await db.get('SELECT 1 FROM usuarios WHERE codigo = ?', codigo);
     if (!usado) return codigo;
   }
   throw new Error('No se pudo generar un codigo libre');
 }
 
-export function hayUsuarios(): boolean {
-  const { n } = db.prepare('SELECT COUNT(*) AS n FROM usuarios').get() as { n: number };
+export async function hayUsuarios(): Promise<boolean> {
+  const { n } = await db.get('SELECT COUNT(*) AS n FROM usuarios') as { n: number };
   return n > 0;
 }

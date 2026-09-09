@@ -18,7 +18,7 @@ export default async function PaginaPedido({
 }) {
   const usuario = await exigir();
   const { id } = await params;
-  const pedido = obtenerPedido(Number(id));
+  const pedido = await obtenerPedido(Number(id));
   if (!pedido) notFound();
 
   // Un mesero no abre la comanda de un domicilio, ni la recepcion la de una mesa.
@@ -28,10 +28,10 @@ export default async function PaginaPedido({
   return (
     <TomaPedido
       pedido={pedido}
-      categorias={listarCategorias()}
-      productos={listarProductos()}
-      ingredientes={mapaIngredientes()}
-      domiciliarios={listarDomiciliarios()}
+      categorias={await listarCategorias()}
+      productos={await listarProductos()}
+      ingredientes={await mapaIngredientes()}
+      domiciliarios={await listarDomiciliarios()}
     />
   );
 }

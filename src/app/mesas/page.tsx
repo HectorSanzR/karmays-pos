@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function Mesas() {
   await exigir('mesas');
 
-  const mesas = listarMesasConEstado();
+  const mesas = await listarMesasConEstado();
 
   const zonas = mesas.reduce<Record<string, MesaConEstado[]>>((acc, m) => {
     (acc[m.zona] ??= []).push(m);

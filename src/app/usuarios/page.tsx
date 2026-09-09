@@ -16,7 +16,7 @@ const ROLES: [Rol, string][] = [
 
 export default async function Usuarios() {
   const yo = await exigir('usuarios');
-  const gente = listarUsuarios();
+  const gente = await listarUsuarios();
 
   return (
     <div className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[340px_1fr]">

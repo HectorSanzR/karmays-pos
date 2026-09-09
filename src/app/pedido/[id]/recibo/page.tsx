@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { exigir } from '@/lib/sesion';
 import { notFound } from 'next/navigation';
 import { obtenerPedido } from '@/lib/consultas';
-import { leerCarta } from '@/lib/db';
+import { negocio } from '@/lib/db';
 import { dinero, hora } from '@/lib/formato';
 import { BotonImprimir } from '@/components/BotonImprimir';
 
@@ -15,10 +15,10 @@ export default async function Recibo({
 }) {
   await exigir('cobrar');
   const { id } = await params;
-  const p = obtenerPedido(Number(id));
+  const p = await obtenerPedido(Number(id));
   if (!p) notFound();
 
-  const negocio = leerCarta()?.negocio;
+  const datos = negocio();
 
   return (
     <div className="mx-auto max-w-md space-y-4 p-4">
@@ -32,10 +32,10 @@ export default async function Recibo({
       <div className="mx-auto w-full bg-white p-6 font-mono text-[13px] leading-relaxed text-black print:p-0">
         <div className="text-center">
           <p className="text-base font-bold uppercase">
-            {negocio?.nombre ?? 'Restaurante'}
+            {datos?.nombre ?? 'Restaurante'}
           </p>
-          {negocio?.telefonos?.length ? (
-            <p>{negocio.telefonos.join(' · ')}</p>
+          {datos?.telefonos?.length ? (
+            <p>{datos.telefonos.join(' · ')}</p>
           ) : null}
           <p className="mt-2">
             Pedido #{p.id} · {hora(p.creado_en)}

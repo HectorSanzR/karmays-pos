@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // pg carga drivers de forma dinamica; que Next no intente empaquetarlo.
+  serverExternalPackages: ['pg'],
 };
 
 export default nextConfig;

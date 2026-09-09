@@ -11,15 +11,15 @@ export const dynamic = 'force-dynamic';
 export default async function Domicilios() {
   await exigir('domicilios');
 
-  const activos = listarPedidos('domicilio', [
+  const activos = await listarPedidos('domicilio', [
     'abierto',
     'en_cocina',
     'listo',
     'en_camino',
     'entregado',
   ]);
-  const cerrados = listarPedidos('domicilio', ['pagado']).slice(0, 12);
-  const domiciliarios = listarDomiciliarios();
+  const cerrados = (await listarPedidos('domicilio', ['pagado'])).slice(0, 12);
+  const domiciliarios = await listarDomiciliarios();
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[380px_1fr]">

@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { exigir } from '@/lib/sesion';
-import { cajaAbierta, listarMesasConEstado, listarPedidos } from '@/lib/consultas';
+import {
+  cajaAbierta,
+  listarMesasConEstado,
+  listarPedidos,
+  type ResumenPedido,
+} from '@/lib/consultas';
 import { dinero, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 
@@ -9,9 +14,9 @@ export const dynamic = 'force-dynamic';
 export default async function Inicio() {
   await exigir('inicio');
 
-  const caja = cajaAbierta();
-  const mesas = listarMesasConEstado();
-  const activos = listarPedidos(undefined, [
+  const caja = await cajaAbierta();
+  const mesas = await listarMesasConEstado();
+  const activos = await listarPedidos(undefined, [
     'abierto',
     'en_cocina',
     'listo',
@@ -84,7 +89,7 @@ function ListaPedidos({
   pedidos,
 }: {
   titulo: string;
-  pedidos: ReturnType<typeof listarPedidos>;
+  pedidos: ResumenPedido[];
 }) {
   return (
     <div className="tarjeta overflow-hidden">

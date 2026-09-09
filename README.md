@@ -3,26 +3,76 @@
 Punto de venta para el restaurante. Tres cosas: **toma de pedidos en la mesa**,
 **domicilios** y **recaudo / cierre de caja**.
 
-Corre en el PC del negocio y se abre desde el navegador, tanto en el equipo de
-caja como en los celulares o tablets de los meseros conectados al mismo WiFi.
-No necesita internet ni servicios externos.
+Corre en la web (Netlify) sobre una base en Supabase, y se abre desde el
+navegador: el equipo de caja, las tablets del salon y los celulares de los
+domiciliarios, esten donde esten.
 
-## Arrancar
+## Antes de nada: esto necesita internet
+
+Los datos viven en Supabase y la aplicacion corre en Netlify. **Sin internet no
+hay POS**: ni comandas, ni cobros. Vale la pena tener un plan para ese rato —
+anotar en papel y cargar despues— porque va a pasar algun dia en pleno
+servicio.
+
+## Poner a andar el proyecto
+
+Hace falta una base en Supabase (gratis) y su cadena de conexion.
+
+1. En Supabase: **New project**. Guarda la contraseña que te pide, no la vuelve
+   a mostrar. Elige la region mas cercana (para Colombia, `East US` o
+   `South America`).
+2. **Project settings > Database > Connection string > Transaction pooler**
+   (puerto **6543**, no el 5432). Copia esa cadena y reemplaza
+   `[YOUR-PASSWORD]` por la contraseña del paso 1.
+3. En el proyecto, copia `.env.example` como `.env.local` y pega la cadena en
+   `DATABASE_URL`. Ese archivo no se sube a git.
+4. Crea las tablas y carga la carta:
 
 ```bash
-npm run dev:red
+npm run db:esquema
+npm run carta
 ```
 
-Luego abrir `http://localhost:3000` en el PC. Para entrar desde un celular,
-usar la direccion de red que imprime la consola (algo como
-`http://192.168.x.x:3000`) estando en el mismo WiFi.
-
-Para el dia a dia conviene la version compilada, que va mas rapida:
+5. Si vienes del POS viejo con SQLite y quieres conservar lo que ya hay
+   (carta, mesas, personas con sus codigos, turnos y pedidos):
 
 ```bash
-npm run build
-npm run start:red
+npm run db:migrar
 ```
+
+   Lee `datos/pos.db` y lo sube tal cual, conservando los numeros de pedido.
+   Solo copia las tablas que esten vacias, asi que correrlo dos veces no
+   duplica nada. Las sesiones abiertas no se copian: cada quien vuelve a
+   marcar su codigo.
+
+6. Para trabajar en local contra esa misma base:
+
+```bash
+npm run dev
+```
+
+## Subirlo a Netlify
+
+1. Sube el repositorio a GitHub.
+2. En Netlify: **Add new site > Import an existing project** y elige el repo.
+   El `netlify.toml` ya trae el comando de build y el plugin de Next.
+3. En **Site configuration > Environment variables** agrega `DATABASE_URL` con
+   la misma cadena del pooler. **Sin eso el sitio arranca y falla.**
+4. Deploy. Cada `git push` vuelve a desplegar.
+
+La primera vez que se abra la web, si no hay usuarios, pide crear el
+administrador. Si migraste desde SQLite, entra con el codigo que ya tenias.
+
+### Que el POS no quede publico de mas
+
+El sitio de Netlify queda con una direccion `.netlify.app` que cualquiera puede
+abrir. Lo que protege el negocio es el codigo de acceso, y por eso el sistema
+**frena a quien intente adivinarlo**: a los 8 intentos fallidos desde una misma
+conexion, bloquea 15 minutos. Aun asi, conviene:
+
+- No repartir la direccion mas alla del equipo.
+- Cambiar los codigos cuando alguien se va del negocio (*Personas > Cambiar*).
+- Apagar el acceso de quien termina turno, que ademas cierra su sesion.
 
 ## La carta
 
@@ -138,7 +188,10 @@ informacion real del negocio. Para respaldar, basta con copiar el archivo.
 ```
 carta.json              la carta del negocio
 scripts/cargar-carta.mjs  sincroniza carta.json con la base
-src/lib/db.ts           conexion y esquema de la base
+sql/esquema.sql         las tablas en Postgres
+scripts/esquema.mjs     las crea en Supabase
+scripts/migrar-desde-sqlite.mjs  sube lo que habia en el POS local
+src/lib/db.ts           conexion a Postgres
 src/lib/consultas.ts    lecturas
 src/lib/acciones.ts     escrituras (server actions)
 src/app/mesas           mapa de mesas

@@ -13,10 +13,10 @@ export default async function PaginaCobrar({
 }) {
   await exigir('cobrar');
   const { id } = await params;
-  const pedido = obtenerPedido(Number(id));
+  const pedido = await obtenerPedido(Number(id));
   if (!pedido) notFound();
 
-  const caja = cajaAbierta();
+  const caja = await cajaAbierta();
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">

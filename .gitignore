@@ -42,3 +42,7 @@ next-env.d.ts
 
 # datos locales del POS
 /datos
+
+# secretos locales
+.env.local
+.env*.local

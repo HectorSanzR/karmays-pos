@@ -25,16 +25,16 @@ export default async function Historial({
   await exigir('historial');
 
   const { turno } = await searchParams;
-  const turnos = listarTurnos();
+  const turnos = await listarTurnos();
 
   // Sin parametro se muestra el turno mas reciente; "todos" abre el historial
   // completo.
   const sesionId =
     turno === 'todos' ? null : turno ? Number(turno) : (turnos[0]?.id ?? null);
 
-  const pedidos = historialPedidos(sesionId);
-  const metodos = cobrosPorMetodo(sesionId);
-  const productos = productosVendidos(sesionId);
+  const pedidos = await historialPedidos(sesionId);
+  const metodos = await cobrosPorMetodo(sesionId);
+  const productos = await productosVendidos(sesionId);
 
   const cobrados = pedidos.filter((p) => p.estado === 'pagado');
   const anulados = pedidos.filter((p) => p.estado === 'anulado');

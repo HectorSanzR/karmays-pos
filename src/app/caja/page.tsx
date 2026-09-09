@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function Caja() {
   await exigir('caja');
 
-  const sesion = cajaAbierta();
+  const sesion = await cajaAbierta();
 
   if (!sesion) {
     return (
@@ -43,8 +43,8 @@ export default async function Caja() {
     );
   }
 
-  const r = resumenCaja(sesion);
-  const abiertos = listarPedidos(undefined, [
+  const r = await resumenCaja(sesion);
+  const abiertos = await listarPedidos(undefined, [
     'abierto',
     'en_cocina',
     'listo',
