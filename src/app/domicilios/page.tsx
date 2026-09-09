@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { listarPedidos } from '@/lib/consultas';
+import { listarDomiciliarios, listarPedidos } from '@/lib/consultas';
 import { crearPedidoDirecto } from '@/lib/acciones';
 import { dinero, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
+import { SelectorDomiciliario } from '@/components/SelectorDomiciliario';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export default function Domicilios() {
     'entregado',
   ]);
   const cerrados = listarPedidos('domicilio', ['pagado']).slice(0, 12);
+  const domiciliarios = listarDomiciliarios();
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[380px_1fr]">
@@ -93,8 +95,11 @@ export default function Domicilios() {
 
       <section className="space-y-4">
         <div className="tarjeta overflow-hidden">
-          <h2 className="border-b border-borde px-4 py-3 font-semibold">
-            En curso ({activos.length})
+          <h2 className="flex items-center justify-between border-b border-borde px-4 py-3 font-semibold">
+            <span>En curso ({activos.length})</span>
+            <Link href="/domiciliarios" className="text-xs font-normal text-suave hover:text-marca">
+              Domiciliarios y liquidacion →
+            </Link>
           </h2>
           {activos.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-suave">
@@ -103,14 +108,11 @@ export default function Domicilios() {
           ) : (
             <ul className="divide-y divide-borde">
               {activos.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    href={`/pedido/${p.id}`}
-                    className="block px-4 py-3 transition hover:bg-panel2"
-                  >
+                <li key={p.id} className="px-4 py-3">
+                  <Link href={`/pedido/${p.id}`} className="block group">
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold">
+                        <p className="truncate font-semibold group-hover:text-marca">
                           {p.cliente_nombre ?? `Pedido #${p.id}`}
                           <span className="ml-2 text-xs font-normal text-suave">
                             {p.cliente_telefono}
@@ -127,9 +129,18 @@ export default function Domicilios() {
                     </div>
                     <p className="mt-1 text-xs text-suave">
                       #{p.id} · {transcurrido(p.creado_en)}
-                      {p.repartidor ? ` · ${p.repartidor}` : ''}
                     </p>
                   </Link>
+
+                  <div className="mt-2">
+                    <SelectorDomiciliario
+                      pedidoId={p.id}
+                      asignadoA={p.domiciliario_id}
+                      estado={p.estado}
+                      domiciliarios={domiciliarios}
+                      conDespacho
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

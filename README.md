@@ -63,6 +63,14 @@ para cocina. *Enviar a cocina* marca los platos como despachados.
 y de ahi se toma el pedido igual que en una mesa. El estado (en cocina, listo,
 en camino, entregado) se cambia desde la misma pantalla del pedido.
 
+**Domiciliarios** → se dan de alta una vez (nombre y telefono) y despues cada
+domicilio se les asigna desde la lista de domicilios: se elige la persona en el
+desplegable y *Despachar* lo manda a "en camino". La pantalla de domiciliarios
+muestra, por persona, cuantos pedidos lleva en ruta, **cuanta plata lleva
+encima sin liquidar** y cuanto efectivo suyo ya entro a caja en el turno — que
+es lo que se necesita para cuadrar con cada uno al final. *Quitar* saca a
+alguien de la lista sin borrar su historial.
+
 **Caja** → hay que abrir la caja con la base del turno antes de poder cobrar.
 Cada cobro admite efectivo (calcula el cambio), Nequi, Daviplata, tarjeta u
 otra transferencia, y se puede dividir la cuenta en varios pagos. Al cierre se
@@ -83,6 +91,7 @@ src/lib/consultas.ts    lecturas
 src/lib/acciones.ts     escrituras (server actions)
 src/app/mesas           mapa de mesas
 src/app/domicilios      alta y seguimiento de domicilios
+src/app/domiciliarios   asignacion y liquidacion por domiciliario
 src/app/pedido/[id]     comanda, cobro y recibo
 src/app/caja            apertura, resumen y cierre de turno
 ```

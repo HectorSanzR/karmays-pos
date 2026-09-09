@@ -3,6 +3,7 @@ import type {
   Categoria,
   CajaSesion,
   Cuenta,
+  Domiciliario,
   Mesa,
   MesaConEstado,
   Pago,
@@ -93,9 +94,10 @@ export function listarMesasConEstado(): MesaConEstado[] {
 export function obtenerPedido(id: number): PedidoCompleto | null {
   const fila = db
     .prepare(
-      `SELECT p.*, m.nombre AS mesa_nombre
+      `SELECT p.*, m.nombre AS mesa_nombre, d.nombre AS domiciliario_nombre
          FROM pedidos p
          LEFT JOIN mesas m ON m.id = p.mesa_id
+         LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id
         WHERE p.id = ?`,
     )
     .get(id);
@@ -164,7 +166,7 @@ export function listarPedidos(tipo?: string, estados?: string[]): ResumenPedido[
   return planos<ResumenPedido>(
     db
       .prepare(
-        `SELECT p.*, m.nombre AS mesa_nombre,
+        `SELECT p.*, m.nombre AS mesa_nombre, d.nombre AS domiciliario_nombre,
                 COALESCE((SELECT SUM(i.precio_unit * i.cantidad)
                             FROM pedido_items i
                            WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0)
@@ -174,10 +176,74 @@ export function listarPedidos(tipo?: string, estados?: string[]): ResumenPedido[
                            WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items
            FROM pedidos p
            LEFT JOIN mesas m ON m.id = p.mesa_id
+           LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id
            ${where}
           ORDER BY p.id DESC`,
       )
       .all(...args),
+  );
+}
+
+/* -------------------------------------------------------- domiciliarios -- */
+
+export function listarDomiciliarios(soloActivos = true): Domiciliario[] {
+  return planos<Domiciliario>(
+    db
+      .prepare(
+        `SELECT * FROM domiciliarios
+          ${soloActivos ? 'WHERE activo = 1' : ''}
+          ORDER BY activo DESC, nombre`,
+      )
+      .all(),
+  );
+}
+
+export interface EstadoDomiciliario extends Domiciliario {
+  /** Pedidos asignados que todavia no se han cobrado. */
+  en_ruta: number;
+  /** Plata que lleva encima sin liquidar (saldo de esos pedidos). */
+  por_cobrar: number;
+  /** Efectivo de sus pedidos ya cobrado en el turno actual. */
+  efectivo_turno: number;
+  entregados: number;
+}
+
+/** Estado de cada domiciliario en el turno abierto (o cero si no hay caja). */
+export function estadoDomiciliarios(): EstadoDomiciliario[] {
+  const sesionId = cajaAbierta()?.id ?? -1;
+  return planos<EstadoDomiciliario>(
+    db
+      .prepare(
+        `SELECT d.*,
+                (SELECT COUNT(*) FROM pedidos p
+                  WHERE p.domiciliario_id = d.id
+                    AND p.estado NOT IN ('pagado', 'anulado')) AS en_ruta,
+                COALESCE((
+                  SELECT SUM(
+                    COALESCE((SELECT SUM(i.precio_unit * i.cantidad)
+                                FROM pedido_items i
+                               WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0)
+                    - p.descuento + p.valor_domicilio + p.propina
+                    - COALESCE((SELECT SUM(g.monto) FROM pagos g
+                                 WHERE g.pedido_id = p.id), 0))
+                    FROM pedidos p
+                   WHERE p.domiciliario_id = d.id
+                     AND p.estado NOT IN ('pagado', 'anulado')), 0) AS por_cobrar,
+                COALESCE((
+                  SELECT SUM(g.monto) FROM pagos g
+                    JOIN pedidos p ON p.id = g.pedido_id
+                   WHERE p.domiciliario_id = d.id
+                     AND g.metodo = 'efectivo'
+                     AND g.caja_sesion_id = ?), 0) AS efectivo_turno,
+                (SELECT COUNT(*) FROM pedidos p
+                  WHERE p.domiciliario_id = d.id
+                    AND p.estado = 'pagado'
+                    AND p.caja_sesion_id = ?) AS entregados
+           FROM domiciliarios d
+          WHERE d.activo = 1
+          ORDER BY d.nombre`,
+      )
+      .all(sesionId, sesionId),
   );
 }
 

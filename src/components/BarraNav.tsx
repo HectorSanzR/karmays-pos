@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const enlaces = [
   { href: '/mesas', texto: 'Mesas' },
   { href: '/domicilios', texto: 'Domicilios' },
+  { href: '/domiciliarios', texto: 'Domiciliarios' },
   { href: '/caja', texto: 'Caja' },
 ];
 
@@ -24,7 +25,8 @@ export function BarraNav() {
 
         <nav className="flex gap-1">
           {enlaces.map((e) => {
-            const activo = ruta.startsWith(e.href);
+            // Exacto o subruta: /domicilios no debe encender /domiciliarios.
+            const activo = ruta === e.href || ruta.startsWith(`${e.href}/`);
             return (
               <Link
                 key={e.href}

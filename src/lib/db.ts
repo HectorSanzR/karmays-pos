@@ -41,6 +41,13 @@ CREATE TABLE IF NOT EXISTS mesas (
   capacidad  INTEGER NOT NULL DEFAULT 4
 );
 
+CREATE TABLE IF NOT EXISTS domiciliarios (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre   TEXT NOT NULL UNIQUE,
+  telefono TEXT,
+  activo   INTEGER NOT NULL DEFAULT 1
+);
+
 CREATE TABLE IF NOT EXISTS caja_sesiones (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   base         INTEGER NOT NULL DEFAULT 0,
@@ -61,6 +68,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
   cliente_direccion TEXT,
   cliente_notas     TEXT,
   repartidor        TEXT,
+  domiciliario_id   INTEGER REFERENCES domiciliarios(id),
   valor_domicilio   INTEGER NOT NULL DEFAULT 0,
   descuento         INTEGER NOT NULL DEFAULT 0,
   propina           INTEGER NOT NULL DEFAULT 0,
@@ -93,11 +101,48 @@ CREATE TABLE IF NOT EXISTS pagos (
   creado_en      TEXT NOT NULL
 );
 
+`;
+
+/** Se corre despues de las migraciones, porque toca columnas agregadas. */
+const INDICES = `
 CREATE INDEX IF NOT EXISTS ix_pedidos_estado ON pedidos(estado);
+CREATE INDEX IF NOT EXISTS ix_pedidos_domi   ON pedidos(domiciliario_id, estado);
 CREATE INDEX IF NOT EXISTS ix_pedidos_mesa   ON pedidos(mesa_id, estado);
 CREATE INDEX IF NOT EXISTS ix_items_pedido   ON pedido_items(pedido_id);
 CREATE INDEX IF NOT EXISTS ix_pagos_pedido   ON pagos(pedido_id);
 `;
+
+/**
+ * Migraciones para bases que ya existen. Cada una debe poder correr varias
+ * veces sin romper nada.
+ */
+function migrar(db: DatabaseSync) {
+  const columnas = (tabla: string) =>
+    (db.prepare(`PRAGMA table_info(${tabla})`).all() as { name: string }[]).map(
+      (c) => c.name,
+    );
+
+  if (!columnas('pedidos').includes('domiciliario_id')) {
+    db.exec(
+      'ALTER TABLE pedidos ADD COLUMN domiciliario_id INTEGER REFERENCES domiciliarios(id)',
+    );
+    // El campo viejo era texto libre: se convierte en domiciliarios reales.
+    const nombres = db
+      .prepare(
+        `SELECT DISTINCT TRIM(repartidor) AS nombre FROM pedidos
+          WHERE repartidor IS NOT NULL AND TRIM(repartidor) <> ''`,
+      )
+      .all() as { nombre: string }[];
+    for (const { nombre } of nombres) {
+      db.prepare('INSERT OR IGNORE INTO domiciliarios (nombre) VALUES (?)').run(nombre);
+      db.prepare(
+        `UPDATE pedidos
+            SET domiciliario_id = (SELECT id FROM domiciliarios WHERE nombre = ?)
+          WHERE TRIM(repartidor) = ?`,
+      ).run(nombre, nombre);
+    }
+  }
+}
 
 declare global {
   var __posDb: DatabaseSync | undefined;
@@ -181,6 +226,8 @@ function abrir(): DatabaseSync {
   fs.mkdirSync(dir, { recursive: true });
   const db = new DatabaseSync(path.join(dir, 'pos.db'));
   db.exec(SCHEMA);
+  migrar(db);
+  db.exec(INDICES);
   semilla(db);
   return db;
 }

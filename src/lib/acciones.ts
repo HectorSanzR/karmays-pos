@@ -153,7 +153,7 @@ export async function actualizarPedido(formData: FormData) {
             cliente_telefono  = ?,
             cliente_direccion = ?,
             cliente_notas     = ?,
-            repartidor        = ?,
+            domiciliario_id   = ?,
             valor_domicilio   = ?,
             descuento         = ?,
             comensales        = ?
@@ -163,7 +163,7 @@ export async function actualizarPedido(formData: FormData) {
     String(formData.get('cliente_telefono') || '').trim() || null,
     String(formData.get('cliente_direccion') || '').trim() || null,
     String(formData.get('cliente_notas') || '').trim() || null,
-    String(formData.get('repartidor') || '').trim() || null,
+    Number(formData.get('domiciliario_id')) || null,
     Number(formData.get('valor_domicilio') || 0),
     Number(formData.get('descuento') || 0),
     Number(formData.get('comensales') || 0) || null,
@@ -178,6 +178,44 @@ export async function anularPedido(pedidoId: number) {
   ).run(ahora(), pedidoId);
   refrescar();
   redirect('/');
+}
+
+/* -------------------------------------------------------- domiciliarios -- */
+
+export async function crearDomiciliario(formData: FormData) {
+  const nombre = String(formData.get('nombre') || '').trim();
+  if (!nombre) return;
+  db.prepare(
+    `INSERT INTO domiciliarios (nombre, telefono) VALUES (?, ?)
+     ON CONFLICT(nombre) DO UPDATE SET activo = 1, telefono = excluded.telefono`,
+  ).run(nombre, String(formData.get('telefono') || '').trim() || null);
+  refrescar();
+}
+
+/** Asigna o desasigna (domiciliarioId = null) el pedido. */
+export async function asignarDomiciliario(
+  pedidoId: number,
+  domiciliarioId: number | null,
+) {
+  db.prepare('UPDATE pedidos SET domiciliario_id = ? WHERE id = ?').run(
+    domiciliarioId,
+    pedidoId,
+  );
+  refrescar();
+}
+
+/** Asignar y despachar en un solo gesto: es lo que se hace al entregarle
+ *  la bolsa al domiciliario. */
+export async function despachar(pedidoId: number, domiciliarioId: number) {
+  db.prepare(
+    `UPDATE pedidos SET domiciliario_id = ?, estado = 'en_camino' WHERE id = ?`,
+  ).run(domiciliarioId, pedidoId);
+  refrescar();
+}
+
+export async function activarDomiciliario(id: number, activo: boolean) {
+  db.prepare('UPDATE domiciliarios SET activo = ? WHERE id = ?').run(activo ? 1 : 0, id);
+  refrescar();
 }
 
 /* -------------------------------------------------------------- recaudo -- */

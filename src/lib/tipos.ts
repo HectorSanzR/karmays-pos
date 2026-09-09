@@ -32,6 +32,13 @@ export interface Producto {
   activo: number;
 }
 
+export interface Domiciliario {
+  id: number;
+  nombre: string;
+  telefono: string | null;
+  activo: number;
+}
+
 export interface Mesa {
   id: number;
   nombre: string;
@@ -70,6 +77,8 @@ export interface Pedido {
   cliente_direccion: string | null;
   cliente_notas: string | null;
   repartidor: string | null;
+  domiciliario_id: number | null;
+  domiciliario_nombre: string | null;
   valor_domicilio: number;
   descuento: number;
   propina: number;

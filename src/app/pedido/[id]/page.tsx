@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import {
   listarCategorias,
+  listarDomiciliarios,
   listarProductos,
   mapaIngredientes,
   obtenerPedido,
@@ -24,6 +25,7 @@ export default async function PaginaPedido({
       categorias={listarCategorias()}
       productos={listarProductos()}
       ingredientes={mapaIngredientes()}
+      domiciliarios={listarDomiciliarios()}
     />
   );
 }

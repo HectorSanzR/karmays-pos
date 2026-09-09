@@ -14,16 +14,29 @@ import {
 } from '@/lib/acciones';
 import { dinero, transcurrido } from '@/lib/formato';
 import { EstadoChip } from './EstadoChip';
-import type { Categoria, PedidoCompleto, PedidoItem, Producto } from '@/lib/tipos';
+import type {
+  Categoria,
+  Domiciliario,
+  PedidoCompleto,
+  PedidoItem,
+  Producto,
+} from '@/lib/tipos';
 
 interface Props {
   pedido: PedidoCompleto;
   categorias: Categoria[];
   productos: Producto[];
   ingredientes: Record<number, string[]>;
+  domiciliarios: Domiciliario[];
 }
 
-export function TomaPedido({ pedido, categorias, productos, ingredientes }: Props) {
+export function TomaPedido({
+  pedido,
+  categorias,
+  productos,
+  ingredientes,
+  domiciliarios,
+}: Props) {
   const [cat, setCat] = useState<number | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [editando, setEditando] = useState<PedidoItem | null>(null);
@@ -107,6 +120,15 @@ export function TomaPedido({ pedido, categorias, productos, ingredientes }: Prop
                 #{pedido.id} · {transcurrido(pedido.creado_en)}
                 {pedido.comensales ? ` · ${pedido.comensales} pax` : ''}
               </p>
+              {pedido.tipo === 'domicilio' && (
+                <p className="mt-0.5 text-xs">
+                  {pedido.domiciliario_nombre ? (
+                    <span className="text-info">🛵 {pedido.domiciliario_nombre}</span>
+                  ) : (
+                    <span className="text-marca">Sin domiciliario asignado</span>
+                  )}
+                </p>
+              )}
             </div>
             <EstadoChip estado={pedido.estado} />
           </header>
@@ -221,7 +243,11 @@ export function TomaPedido({ pedido, categorias, productos, ingredientes }: Prop
       )}
 
       {verDatos && (
-        <ModalDatos pedido={pedido} onCerrar={() => setVerDatos(false)} />
+        <ModalDatos
+          pedido={pedido}
+          domiciliarios={domiciliarios}
+          onCerrar={() => setVerDatos(false)}
+        />
       )}
     </div>
   );
@@ -449,9 +475,11 @@ function ModalItem({
 
 function ModalDatos({
   pedido,
+  domiciliarios,
   onCerrar,
 }: {
   pedido: PedidoCompleto;
+  domiciliarios: Domiciliario[];
   onCerrar: () => void;
 }) {
   const esDomicilio = pedido.tipo === 'domicilio';
@@ -480,7 +508,24 @@ function ModalDatos({
               label="Direccion"
               def={pedido.cliente_direccion}
             />
-            <Campo name="repartidor" label="Repartidor" def={pedido.repartidor} />
+            <div>
+              <label className="etiqueta" htmlFor="domiciliario_id">
+                Domiciliario
+              </label>
+              <select
+                id="domiciliario_id"
+                name="domiciliario_id"
+                defaultValue={pedido.domiciliario_id ?? ''}
+                className="campo"
+              >
+                <option value="">Sin asignar</option>
+                {domiciliarios.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Campo
               name="valor_domicilio"
               label="Valor domicilio"
@@ -519,7 +564,11 @@ function ModalDatos({
               name="cliente_direccion"
               value={pedido.cliente_direccion ?? ''}
             />
-            <input type="hidden" name="repartidor" value={pedido.repartidor ?? ''} />
+            <input
+              type="hidden"
+              name="domiciliario_id"
+              value={pedido.domiciliario_id ?? ''}
+            />
             <input type="hidden" name="valor_domicilio" value={pedido.valor_domicilio} />
           </>
         )}
