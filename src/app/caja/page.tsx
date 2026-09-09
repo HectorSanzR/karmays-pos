@@ -1,18 +1,9 @@
 import { cajaAbierta, listarPedidos, resumenCaja } from '@/lib/consultas';
 import { exigir } from '@/lib/sesion';
 import { abrirCaja, cerrarCaja } from '@/lib/acciones';
-import { dinero, hora } from '@/lib/formato';
+import { dinero, hora, nombreMetodo } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
-
-const nombreMetodo: Record<string, string> = {
-  efectivo: 'Efectivo',
-  nequi: 'Nequi',
-  daviplata: 'Daviplata',
-  bre_b: 'Bre-B',
-  tarjeta: 'Tarjeta',
-  transferencia: 'Otra transferencia',
-};
 
 export default async function Caja() {
   await exigir('caja');
@@ -78,7 +69,7 @@ export default async function Caja() {
           {r.porMetodo.map((m) => (
             <Fila
               key={m.metodo}
-              k={`${nombreMetodo[m.metodo] ?? m.metodo} (${m.n})`}
+              k={`${nombreMetodo(m.metodo)} (${m.n})`}
               v={dinero(m.monto)}
             />
           ))}

@@ -221,31 +221,6 @@ export function pedidosDeDomiciliario(domiciliarioId: number): PedidoCompleto[] 
     .filter((p): p is PedidoCompleto => p !== null);
 }
 
-/** Lo que ese domiciliario ya cobro en el turno abierto. */
-export function entregadosDeDomiciliario(domiciliarioId: number): ResumenPedido[] {
-  const sesionId = cajaAbierta()?.id ?? -1;
-  return planos<ResumenPedido>(
-    db
-      .prepare(
-        `SELECT p.*, m.nombre AS mesa_nombre, d.nombre AS domiciliario_nombre,
-                COALESCE((SELECT SUM(i.precio_unit * i.cantidad)
-                            FROM pedido_items i
-                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0)
-                  - p.descuento + p.valor_domicilio + p.propina AS total,
-                COALESCE((SELECT SUM(i.cantidad)
-                            FROM pedido_items i
-                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items
-           FROM pedidos p
-           LEFT JOIN mesas m ON m.id = p.mesa_id
-           LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id
-          WHERE p.domiciliario_id = ? AND p.estado = 'pagado'
-            AND p.caja_sesion_id = ?
-          ORDER BY p.id DESC`,
-      )
-      .all(domiciliarioId, sesionId),
-  );
-}
-
 export interface EstadoDomiciliario extends Domiciliario {
   /** Codigo de acceso de su usuario, para que el dueño se lo pueda dictar. */
   codigo: string | null;
@@ -299,6 +274,104 @@ export function estadoDomiciliarios(): EstadoDomiciliario[] {
           ORDER BY d.nombre`,
       )
       .all(sesionId, sesionId),
+  );
+}
+
+/* ------------------------------------------- control de lo que recaudan -- */
+
+export interface CobroMetodo {
+  metodo: string;
+  monto: number;
+  n: number;
+}
+
+export interface ControlDomiciliario extends EstadoDomiciliario {
+  entregas_hoy: number;
+  cobrado_hoy: number;
+  /** Lo que se cobro por domicilios, para liquidarle su parte. */
+  domicilios_hoy: number;
+  porMetodo: CobroMetodo[];
+  efectivo_hoy: number;
+  /** Nequi, Bre-B, transferencia, tarjeta: entro al negocio directo. */
+  digital_hoy: number;
+}
+
+/**
+ * Lo que cada domiciliario movio desde `desde`, abierto por medio de pago.
+ * Es la foto que hace falta para cuadrar con cada uno al final del dia.
+ */
+export function controlDomiciliarios(desde: string): ControlDomiciliario[] {
+  const cobros = db
+    .prepare(
+      `SELECT p.domiciliario_id AS did, g.metodo,
+              SUM(g.monto) AS monto, COUNT(*) AS n
+         FROM pagos g
+         JOIN pedidos p ON p.id = g.pedido_id
+        WHERE p.domiciliario_id IS NOT NULL AND g.creado_en >= ?
+        GROUP BY p.domiciliario_id, g.metodo`,
+    )
+    .all(desde) as unknown as { did: number; metodo: string; monto: number; n: number }[];
+
+  const entregas = db
+    .prepare(
+      `SELECT domiciliario_id AS did, COUNT(*) AS n,
+              COALESCE(SUM(valor_domicilio), 0) AS domicilios
+         FROM pedidos
+        WHERE domiciliario_id IS NOT NULL AND estado = 'pagado' AND cerrado_en >= ?
+        GROUP BY domiciliario_id`,
+    )
+    .all(desde) as unknown as { did: number; n: number; domicilios: number }[];
+
+  return estadoDomiciliarios().map((d) => {
+    const suyos = cobros.filter((c) => c.did === d.id);
+    const entrega = entregas.find((e) => e.did === d.id);
+    const efectivo = suyos
+      .filter((c) => c.metodo === 'efectivo')
+      .reduce((s, c) => s + c.monto, 0);
+    const cobrado = suyos.reduce((s, c) => s + c.monto, 0);
+
+    return {
+      ...d,
+      entregas_hoy: entrega?.n ?? 0,
+      domicilios_hoy: entrega?.domicilios ?? 0,
+      cobrado_hoy: cobrado,
+      efectivo_hoy: efectivo,
+      digital_hoy: cobrado - efectivo,
+      porMetodo: suyos
+        .map(({ metodo, monto, n }) => ({ metodo, monto, n }))
+        .sort((a, b) => b.monto - a.monto),
+    };
+  });
+}
+
+export interface EntregaDelDia {
+  id: number;
+  domiciliario_id: number;
+  cliente_nombre: string | null;
+  cliente_direccion: string | null;
+  cerrado_en: string;
+  total: number;
+  metodos: string | null;
+}
+
+/** Una linea por entrega cobrada, para poder revisar peso por peso. */
+export function entregasDelDia(desde: string): EntregaDelDia[] {
+  return planos<EntregaDelDia>(
+    db
+      .prepare(
+        `SELECT p.id, p.domiciliario_id, p.cliente_nombre, p.cliente_direccion,
+                p.cerrado_en,
+                COALESCE((SELECT SUM(g.monto) FROM pagos g
+                           WHERE g.pedido_id = p.id), 0) AS total,
+                (SELECT GROUP_CONCAT(DISTINCT g.metodo) FROM pagos g
+                  WHERE g.pedido_id = p.id) AS metodos
+           FROM pedidos p
+          WHERE p.domiciliario_id IS NOT NULL
+            AND p.estado = 'pagado'
+            AND p.cerrado_en >= ?
+          ORDER BY p.cerrado_en DESC`,
+      )
+      .all(desde),
   );
 }
 

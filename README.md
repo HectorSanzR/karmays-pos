@@ -87,11 +87,27 @@ en camino, entregado) se cambia desde la misma pantalla del pedido.
 
 **Domiciliarios** → se dan de alta una vez (nombre y telefono) y despues cada
 domicilio se les asigna desde la lista de domicilios: se elige la persona en el
-desplegable y *Despachar* lo manda a "en camino". La pantalla de domiciliarios
-muestra, por persona, cuantos pedidos lleva en ruta, **cuanta plata lleva
-encima sin liquidar** y cuanto efectivo suyo ya entro a caja en el turno — que
-es lo que se necesita para cuadrar con cada uno al final. *Quitar* saca a
-alguien de la lista sin borrar su historial.
+desplegable y *Despachar* lo manda a "en camino". *Quitar* saca a alguien de la
+lista sin borrar su historial.
+
+Esta pantalla es el control del dia. Arriba va el consolidado —cuanto se cobro
+en domicilios hoy, abierto por medio de pago, cuanto efectivo hay por recibir,
+cuanto ya entro al negocio y cuanto sigue en la calle— y abajo la ficha de cada
+persona con lo mismo a su nombre:
+
+- **Cobrado hoy** y cuantas entregas hizo.
+- El desglose por **Efectivo, Nequi, Bre-B, transferencia**, con el numero de
+  cobros de cada uno.
+- **Efectivo que debe entregar**: la plata fisica que trae encima. Lo digital
+  ya entro al negocio y no se le cobra.
+- **Lleva sin cobrar**: lo que todavia anda en la calle sin pagar.
+- **Cobrado en domicilios**: la suma de los valores de domicilio, si le pagas
+  por entrega.
+- La lista de sus entregas del dia, una por una, con hora, cliente, medio de
+  pago y monto.
+
+El mismo corte lo ve el domiciliario en su pantalla, para que no haya discusion
+al momento de cuadrar.
 
 **Mi ruta** (pantalla del domiciliario) → solo sus pedidos: direccion, boton
 para llamar al cliente, el detalle de lo que lleva en la bolsa y cuanto tiene

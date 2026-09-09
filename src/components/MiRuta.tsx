@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import { cambiarEstadoPedido, cobrarEnRuta } from '@/lib/acciones';
-import { dinero, transcurrido } from '@/lib/formato';
+import { dinero, nombreMetodo, transcurrido } from '@/lib/formato';
 import { EstadoChip } from './EstadoChip';
 import type { MetodoPago, PedidoCompleto } from '@/lib/tipos';
-import type { ResumenPedido } from '@/lib/consultas';
+import type { CobroMetodo } from '@/lib/consultas';
 
 /** Lo que un domiciliario puede recibir en la calle. */
 const METODOS: [MetodoPago, string][] = [
@@ -17,30 +17,56 @@ const METODOS: [MetodoPago, string][] = [
 
 interface Props {
   pedidos: PedidoCompleto[];
-  entregados: ResumenPedido[];
   porCobrar: number;
-  efectivoTurno: number;
+  efectivoHoy: number;
+  cobradoHoy: number;
+  entregasHoy: number;
+  porMetodo: CobroMetodo[];
   hayCaja: boolean;
 }
 
 export function MiRuta({
   pedidos,
-  entregados,
   porCobrar,
-  efectivoTurno,
+  efectivoHoy,
+  cobradoHoy,
+  entregasHoy,
+  porMetodo,
   hayCaja,
 }: Props) {
   return (
     <div className="mx-auto max-w-lg space-y-4 p-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="tarjeta p-4">
-          <p className="text-xs text-suave">Por cobrar</p>
-          <p className="mt-1 text-2xl font-bold text-marca">{dinero(porCobrar)}</p>
-        </div>
-        <div className="tarjeta p-4">
-          <p className="text-xs text-suave">Efectivo que debes entregar</p>
-          <p className="mt-1 text-2xl font-bold text-ok">{dinero(efectivoTurno)}</p>
-        </div>
+      <div className="tarjeta p-5">
+        <p className="text-xs text-suave">Cobrado hoy</p>
+        <p className="mt-1 text-3xl font-bold text-marca">{dinero(cobradoHoy)}</p>
+        <p className="text-xs text-suave">
+          {entregasHoy} entrega{entregasHoy === 1 ? '' : 's'}
+        </p>
+
+        {porMetodo.length > 0 && (
+          <dl className="mt-4 space-y-1 border-t border-borde pt-3 text-sm">
+            {porMetodo.map((m) => (
+              <div key={m.metodo} className="flex justify-between">
+                <dt className="text-suave">
+                  {nombreMetodo(m.metodo)}{' '}
+                  <span className="text-xs text-suave/70">({m.n})</span>
+                </dt>
+                <dd className="font-semibold">{dinero(m.monto)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <dl className="mt-3 space-y-1 border-t border-borde pt-3 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-suave">Efectivo que debes entregar</dt>
+            <dd className="text-base font-bold text-ok">{dinero(efectivoHoy)}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-suave">Te falta cobrar</dt>
+            <dd className="text-base font-bold text-marca">{dinero(porCobrar)}</dd>
+          </div>
+        </dl>
       </div>
 
       {!hayCaja && (
@@ -62,23 +88,6 @@ export function MiRuta({
         </ul>
       )}
 
-      {entregados.length > 0 && (
-        <div className="tarjeta overflow-hidden">
-          <h2 className="border-b border-borde px-4 py-3 text-sm font-semibold">
-            Entregados en el turno ({entregados.length})
-          </h2>
-          <ul className="divide-y divide-borde text-sm">
-            {entregados.map((p) => (
-              <li key={p.id} className="flex gap-3 px-4 py-2 text-suave">
-                <span className="min-w-0 flex-1 truncate">
-                  #{p.id} {p.cliente_nombre}
-                </span>
-                <span className="text-texto">{dinero(p.total)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
