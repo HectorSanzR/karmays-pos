@@ -464,7 +464,14 @@ export async function cobrarEnRuta(
   const r = await registrarPago(pedidoId, metodo, pedido.cuenta.saldo);
   if (!r.ok) return r;
 
-  await db.run(`UPDATE pedidos SET estado = 'pagado' WHERE id = ?`, pedidoId);
+  // Cobrar en la puerta es entregar: se cierra con su hora, que es la que
+  // despues aparece en el historial y en la liquidacion.
+  await db.run(
+    `UPDATE pedidos SET estado = 'pagado', cerrado_en = COALESCE(cerrado_en, ?)
+      WHERE id = ?`,
+    ahora(),
+    pedidoId,
+  );
   refrescar();
   return r;
 }

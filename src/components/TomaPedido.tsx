@@ -60,7 +60,7 @@ export function TomaPedido({
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[1fr_380px]">
       {/* ------------------------------------------------------------ carta */}
-      <section className="order-2 space-y-3 lg:order-1">
+      <section className="order-2 min-w-0 space-y-3 lg:order-1">
         <input
           className="campo"
           placeholder="Buscar plato..."
@@ -111,8 +111,8 @@ export function TomaPedido({
       </section>
 
       {/* ---------------------------------------------------------- comanda */}
-      <aside className="order-1 lg:order-2">
-        <div className="tarjeta sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col">
+      <aside className="order-1 min-w-0 lg:order-2">
+        <div className="tarjeta sticky top-20 flex max-h-[55vh] flex-col lg:max-h-[calc(100vh-6rem)]">
           <header className="flex items-start justify-between gap-2 border-b border-borde p-4">
             <div className="min-w-0">
               <h1 className="truncate text-lg font-bold">{titulo}</h1>

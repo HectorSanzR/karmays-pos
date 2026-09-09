@@ -17,8 +17,10 @@ export function FilaUsuario({ usuario, etiquetaRol, esYo }: Props) {
   const activo = usuario.activo === 1;
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
+    // En celular los tres controles no caben junto al nombre y lo dejaban
+    // reducido a una letra: ahi se apilan debajo.
+    <li className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+      <div className="min-w-0 sm:flex-1">
         <p className="truncate font-semibold">
           {usuario.nombre}
           {esYo && <span className="ml-2 text-xs text-suave">(tu)</span>}
@@ -29,6 +31,7 @@ export function FilaUsuario({ usuario, etiquetaRol, esYo }: Props) {
         </p>
       </div>
 
+      <div className="flex items-center gap-2 sm:contents">
       <button
         onClick={() => setVerCodigo((v) => !v)}
         title={verCodigo ? 'Ocultar' : 'Ver codigo'}
@@ -51,7 +54,7 @@ export function FilaUsuario({ usuario, etiquetaRol, esYo }: Props) {
       <button
         disabled={pendiente || esYo}
         onClick={() => iniciar(() => void activarUsuario(usuario.id, !activo))}
-        className={`w-28 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 ${
+        className={`ml-auto w-28 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:opacity-40 sm:ml-0 sm:py-1.5 ${
           activo
             ? 'bg-ok/15 text-ok hover:bg-ok/25'
             : 'border border-borde bg-panel2 text-suave'
@@ -59,6 +62,7 @@ export function FilaUsuario({ usuario, etiquetaRol, esYo }: Props) {
       >
         {activo ? 'Con acceso' : 'Sin acceso'}
       </button>
+      </div>
     </li>
   );
 }

@@ -146,25 +146,35 @@ export default async function Historial({
               Todavia no se ha cerrado ningun pedido aqui.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-borde text-left text-xs uppercase text-suave">
-                  <tr>
-                    <th className="px-4 py-2 font-medium">Hora</th>
-                    <th className="px-2 py-2 font-medium">#</th>
-                    <th className="px-2 py-2 font-medium">Donde</th>
-                    <th className="px-2 py-2 font-medium">Quien</th>
-                    <th className="px-2 py-2 font-medium">Pago</th>
-                    <th className="px-2 py-2 text-right font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-borde">
-                  {pedidos.map((p) => (
-                    <Fila key={p.id} p={p} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* En pantalla angosta la tabla dejaba la plata fuera de vista,
+                  asi que ahi cada pedido va como tarjeta. */}
+              <ul className="divide-y divide-borde md:hidden">
+                {pedidos.map((p) => (
+                  <TarjetaPedido key={p.id} p={p} />
+                ))}
+              </ul>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-borde text-left text-xs uppercase text-suave">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Hora</th>
+                      <th className="px-2 py-2 font-medium">#</th>
+                      <th className="px-2 py-2 font-medium">Donde</th>
+                      <th className="px-2 py-2 font-medium">Quien</th>
+                      <th className="px-2 py-2 font-medium">Pago</th>
+                      <th className="px-2 py-2 text-right font-medium">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-borde">
+                    {pedidos.map((p) => (
+                      <Fila key={p.id} p={p} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
           {pedidos.length >= 500 && (
             <p className="border-t border-borde px-4 py-2 text-xs text-suave">
@@ -241,5 +251,53 @@ function Fila({ p }: { p: PedidoHistorial }) {
         {dinero(p.total)}
       </td>
     </tr>
+  );
+}
+
+/** El mismo pedido, pero apilado para que quepa en un celular. */
+function TarjetaPedido({ p }: { p: PedidoHistorial }) {
+  const anulado = p.estado === 'anulado';
+
+  return (
+    <li>
+      <Link
+        href={`/pedido/${p.id}/recibo`}
+        className="block px-4 py-3 transition hover:bg-panel2"
+      >
+        <div className="flex items-baseline gap-2">
+          <span
+            className={`min-w-0 flex-1 truncate font-semibold ${
+              anulado ? 'text-suave line-through' : ''
+            }`}
+          >
+            {p.mesa_nombre ?? p.cliente_nombre ?? NOMBRE_TIPO[p.tipo] ?? p.tipo}
+          </span>
+          <span className={`font-bold ${anulado ? 'text-suave' : 'text-marca'}`}>
+            {dinero(p.total)}
+          </span>
+        </div>
+
+        <p className="mt-0.5 text-xs text-suave">
+          #{p.id} · {hora(p.cerrado_en ?? p.creado_en)} · {p.items} items ·{' '}
+          {NOMBRE_TIPO[p.tipo] ?? p.tipo}
+        </p>
+
+        <p className="text-xs">
+          {anulado ? (
+            <span className="text-alerta">anulado</span>
+          ) : (
+            <span className="text-suave">
+              {(p.metodos ?? '')
+                .split(',')
+                .filter(Boolean)
+                .map(nombreMetodo)
+                .join(' + ')}
+              {p.cobrado_por ? ` · cobro ${p.cobrado_por}` : ''}
+              {p.domiciliario_nombre ? ` · 🛵 ${p.domiciliario_nombre}` : ''}
+            </span>
+          )}
+        </p>
+      </Link>
+    </li>
   );
 }
