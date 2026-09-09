@@ -46,3 +46,9 @@ next-env.d.ts
 # secretos locales
 .env.local
 .env*.local
+
+# Local Netlify folder
+.netlify
+
+# la plantilla si se comparte; los .env.local con secretos no
+!.env.example
