@@ -36,8 +36,13 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
   const nRecibido = Number(recibido) || 0;
   const cambio = metodo === 'efectivo' && nRecibido > 0 ? nRecibido - nMonto : 0;
 
-  if (pedido.estado === 'pagado') {
+  // Manda el saldo, no el estado: un domicilio pagado por adelantado sigue su
+  // curso (en cocina, en camino) y no se marca 'pagado' hasta que se entrega,
+  // pero cobrar ya no hay nada que cobrarle.
+  if (cuenta.pagado > 0 && cuenta.saldo <= 0) {
     const ultimo = pedido.pagos.at(-1);
+    const enCurso = pedido.estado !== 'pagado' && pedido.estado !== 'anulado';
+
     return (
       <div className="tarjeta space-y-4 p-8 text-center">
         <p className="text-5xl">✓</p>
@@ -51,13 +56,25 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
             Cambio: {dinero(ultimo.cambio)}
           </p>
         )}
-        <div className="flex justify-center gap-2 pt-2">
+        {enCurso && (
+          <p className="rounded-lg border border-info/40 bg-info/10 px-3 py-2 text-sm text-info">
+            Queda pagado, pero todavia no se ha entregado. Sigue en la lista de
+            domicilios para asignarle domiciliario y despacharlo.
+          </p>
+        )}
+        <div className="flex flex-wrap justify-center gap-2 pt-2">
           <Link href={`/pedido/${pedido.id}/recibo`} className="btn-neutro">
             Ver recibo
           </Link>
-          <Link href="/" className="btn-marca">
-            Listo
-          </Link>
+          {enCurso ? (
+            <Link href="/domicilios" className="btn-marca">
+              Volver a domicilios
+            </Link>
+          ) : (
+            <Link href="/" className="btn-marca">
+              Listo
+            </Link>
+          )}
         </div>
       </div>
     );

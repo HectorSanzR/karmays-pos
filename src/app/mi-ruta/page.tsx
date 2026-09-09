@@ -1,6 +1,7 @@
 import {
   cajaAbierta,
   controlDomiciliarios,
+  entregasDelTurno,
   pedidosDeDomiciliario,
 } from '@/lib/consultas';
 import { exigir } from '@/lib/sesion';
@@ -32,6 +33,9 @@ export default async function PaginaMiRuta() {
       cobradoTurno={mio?.cobrado_turno ?? 0}
       entregasTurno={mio?.entregas_turno ?? 0}
       porMetodo={mio?.porMetodo ?? []}
+      entregas={(await entregasDelTurno(caja?.id ?? null)).filter(
+        (e) => e.domiciliario_id === usuario.domiciliario_id,
+      )}
       hayCaja={!!caja}
     />
   );

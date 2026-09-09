@@ -129,6 +129,8 @@ export async function pedidoAbiertoDeMesa(mesaId: number): Promise<number | null
 export interface ResumenPedido extends Pedido {
   total: number;
   items: number;
+  /** Lo ya abonado: sirve para saber si viene pagado por adelantado. */
+  pagado: number;
 }
 
 export async function listarPedidos(tipo?: string, estados?: string[]): Promise<ResumenPedido[]> {
@@ -151,7 +153,9 @@ export async function listarPedidos(tipo?: string, estados?: string[]): Promise<
                   - p.descuento + p.valor_domicilio + p.propina AS total,
                 COALESCE((SELECT SUM(i.cantidad)
                             FROM pedido_items i
-                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items
+                           WHERE i.pedido_id = p.id AND i.estado <> 'anulado'), 0) AS items,
+                COALESCE((SELECT SUM(g.monto) FROM pagos g
+                           WHERE g.pedido_id = p.id), 0) AS pagado
            FROM pedidos p
            LEFT JOIN mesas m ON m.id = p.mesa_id
            LEFT JOIN domiciliarios d ON d.id = p.domiciliario_id

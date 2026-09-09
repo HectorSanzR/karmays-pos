@@ -138,6 +138,24 @@ export async function enviarACocina(pedidoId: number) {
 }
 
 export async function cambiarEstadoPedido(pedidoId: number, estado: string) {
+  // Al marcar entregado un domicilio que ya estaba pagado por adelantado, no
+  // queda nada pendiente: se cierra solo, sin obligar a nadie a cobrar algo
+  // que ya se cobro.
+  if (estado === 'entregado') {
+    const pedido = await obtenerPedido(pedidoId);
+    if (pedido && pedido.cuenta.saldo <= 0 && pedido.items.length > 0) {
+      await db.run(
+        `UPDATE pedidos SET estado = 'pagado', cerrado_en = ?, caja_sesion_id = ?
+          WHERE id = ?`,
+        ahora(),
+        pedido.caja_sesion_id ?? (await cajaAbierta())?.id ?? null,
+        pedidoId,
+      );
+      refrescar();
+      return;
+    }
+  }
+
   await db.run('UPDATE pedidos SET estado = ? WHERE id = ?', estado, pedidoId);
   refrescar();
 }
@@ -406,8 +424,19 @@ export async function registrarPago(
 
   const saldo = pedido.cuenta.saldo - cobro;
   if (saldo <= 0) {
-    await db.run(`UPDATE pedidos SET estado = 'pagado', cerrado_en = ?, caja_sesion_id = ?
-        WHERE id = ?`, ahora(), sesion.id, pedidoId);
+    // Cobrar no es lo mismo que terminar. Un domicilio se puede pagar por
+    // adelantado (Bre-B, Nequi) antes de salir: si al cobrarlo se marcara
+    // como 'pagado' desapareceria del flujo y ya no habria como asignarle
+    // domiciliario. Solo se cierra cuando ademas esta entregado.
+    const cierra = pedido.tipo !== 'domicilio' || pedido.estado === 'entregado';
+
+    if (cierra) {
+      await db.run(`UPDATE pedidos SET estado = 'pagado', cerrado_en = ?, caja_sesion_id = ?
+          WHERE id = ?`, ahora(), sesion.id, pedidoId);
+    } else {
+      // Queda saldado pero sigue su curso; el turno se le apunta desde ya.
+      await db.run('UPDATE pedidos SET caja_sesion_id = ? WHERE id = ?', sesion.id, pedidoId);
+    }
   }
 
   refrescar();

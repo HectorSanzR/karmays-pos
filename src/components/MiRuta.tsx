@@ -5,7 +5,8 @@ import { cambiarEstadoPedido, cobrarEnRuta } from '@/lib/acciones';
 import { dinero, nombreMetodo, transcurrido } from '@/lib/formato';
 import { EstadoChip } from './EstadoChip';
 import type { MetodoPago, PedidoCompleto } from '@/lib/tipos';
-import type { CobroMetodo } from '@/lib/consultas';
+import type { CobroMetodo, EntregaDelTurno } from '@/lib/consultas';
+import { hora } from '@/lib/formato';
 
 /** Lo que un domiciliario puede recibir en la calle. */
 const METODOS: [MetodoPago, string][] = [
@@ -22,6 +23,7 @@ interface Props {
   cobradoTurno: number;
   entregasTurno: number;
   porMetodo: CobroMetodo[];
+  entregas: EntregaDelTurno[];
   hayCaja: boolean;
 }
 
@@ -32,6 +34,7 @@ export function MiRuta({
   cobradoTurno,
   entregasTurno,
   porMetodo,
+  entregas,
   hayCaja,
 }: Props) {
   return (
@@ -88,6 +91,36 @@ export function MiRuta({
         </ul>
       )}
 
+      {entregas.length > 0 && (
+        <div className="tarjeta overflow-hidden">
+          <h2 className="border-b border-borde px-4 py-3 text-sm font-semibold">
+            Lo que ya entregaste ({entregas.length})
+          </h2>
+          <ul className="divide-y divide-borde">
+            {entregas.map((e) => (
+              <li key={e.id} className="px-4 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {e.cliente_nombre ?? `Pedido #${e.id}`}
+                  </span>
+                  <span className="whitespace-nowrap font-semibold">
+                    {dinero(e.total)}
+                  </span>
+                </div>
+                <p className="truncate text-xs text-suave">{e.cliente_direccion}</p>
+                <p className="text-xs text-suave">
+                  {hora(e.cerrado_en)} ·{' '}
+                  {(e.metodos ?? '')
+                    .split(',')
+                    .filter(Boolean)
+                    .map(nombreMetodo)
+                    .join(' + ')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -96,6 +129,8 @@ function Tarjeta({ pedido }: { pedido: PedidoCompleto }) {
   const [cobrando, setCobrando] = useState(false);
   const [error, setError] = useState('');
   const [pendiente, iniciar] = useTransition();
+
+  const yaPagado = pedido.cuenta.saldo <= 0;
 
   const cobrar = (metodo: MetodoPago) => {
     setError('');
@@ -142,16 +177,25 @@ function Tarjeta({ pedido }: { pedido: PedidoCompleto }) {
           ))}
         </ul>
 
-        <div className="flex items-baseline justify-between border-t border-borde pt-3">
-          <span className="text-sm text-suave">
-            A cobrar
-            {pedido.cuenta.domicilio > 0 &&
-              ` (incluye ${dinero(pedido.cuenta.domicilio)} de domicilio)`}
-          </span>
-          <span className="text-2xl font-bold text-marca">
-            {dinero(pedido.cuenta.saldo)}
-          </span>
-        </div>
+        {/* Un domicilio se puede haber pagado por adelantado: entonces no hay
+            nada que cobrar en la puerta, solo entregarlo. */}
+        {yaPagado ? (
+          <div className="flex items-baseline justify-between border-t border-borde pt-3">
+            <span className="text-sm text-suave">Ya esta pagado</span>
+            <span className="chip bg-ok/15 text-ok">No cobrar nada</span>
+          </div>
+        ) : (
+          <div className="flex items-baseline justify-between border-t border-borde pt-3">
+            <span className="text-sm text-suave">
+              A cobrar
+              {pedido.cuenta.domicilio > 0 &&
+                ` (incluye ${dinero(pedido.cuenta.domicilio)} de domicilio)`}
+            </span>
+            <span className="text-2xl font-bold text-marca">
+              {dinero(pedido.cuenta.saldo)}
+            </span>
+          </div>
+        )}
 
         {error && <p className="text-sm text-alerta">{error}</p>}
 
@@ -168,12 +212,24 @@ function Tarjeta({ pedido }: { pedido: PedidoCompleto }) {
                 Voy en camino
               </button>
             )}
-            <button
-              onClick={() => setCobrando(true)}
-              className={`btn-ok ${pedido.estado === 'en_camino' ? 'col-span-2' : ''}`}
-            >
-              Cobrar
-            </button>
+            {yaPagado ? (
+              <button
+                disabled={pendiente}
+                onClick={() =>
+                  iniciar(() => void cambiarEstadoPedido(pedido.id, 'entregado'))
+                }
+                className={`btn-ok ${pedido.estado === 'en_camino' ? 'col-span-2' : ''}`}
+              >
+                Entregado
+              </button>
+            ) : (
+              <button
+                onClick={() => setCobrando(true)}
+                className={`btn-ok ${pedido.estado === 'en_camino' ? 'col-span-2' : ''}`}
+              >
+                Cobrar
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

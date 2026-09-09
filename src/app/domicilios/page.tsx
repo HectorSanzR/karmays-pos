@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { exigir } from '@/lib/sesion';
 import { listarDomiciliarios, listarPedidos } from '@/lib/consultas';
 import { crearPedidoDirecto } from '@/lib/acciones';
-import { dinero, transcurrido } from '@/lib/formato';
+import { dinero, hora, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 import { SelectorDomiciliario } from '@/components/SelectorDomiciliario';
 
@@ -18,7 +18,7 @@ export default async function Domicilios() {
     'en_camino',
     'entregado',
   ]);
-  const cerrados = (await listarPedidos('domicilio', ['pagado'])).slice(0, 12);
+  const cerrados = (await listarPedidos('domicilio', ['pagado'])).slice(0, 20);
   const domiciliarios = await listarDomiciliarios();
 
   return (
@@ -126,13 +126,20 @@ export default async function Domicilios() {
                         </p>
                       </div>
                       <EstadoChip estado={p.estado} />
+                      {p.pagado >= p.total && p.total > 0 && (
+                        <span className="chip bg-ok/15 text-ok">Pagado</span>
+                      )}
                       <span className="w-24 text-right font-semibold">
                         {dinero(p.total)}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-suave">
-                      #{p.id} · {transcurrido(p.creado_en)}
+                      #{p.id} · {transcurrido(p.creado_en)} · {p.items} items
+                      {p.domiciliario_nombre ? ` · 🛵 ${p.domiciliario_nombre}` : ''}
                     </p>
+                    {p.cliente_notas && (
+                      <p className="truncate text-xs text-marca">{p.cliente_notas}</p>
+                    )}
                   </Link>
 
                   <div className="mt-2">
@@ -153,15 +160,36 @@ export default async function Domicilios() {
         {cerrados.length > 0 && (
           <div className="tarjeta overflow-hidden">
             <h2 className="border-b border-borde px-4 py-3 font-semibold">
-              Entregados y cobrados
+              Ya entregados
             </h2>
-            <ul className="divide-y divide-borde text-sm">
+            <ul className="divide-y divide-borde">
               {cerrados.map((p) => (
-                <li key={p.id} className="flex gap-3 px-4 py-2 text-suave">
-                  <span className="flex-1 truncate">
-                    #{p.id} {p.cliente_nombre}
-                  </span>
-                  <span>{dinero(p.total)}</span>
+                <li key={p.id}>
+                  <Link
+                    href={`/pedido/${p.id}`}
+                    className="group block px-4 py-3 transition hover:bg-panel2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold group-hover:text-marca">
+                          {p.cliente_nombre ?? `Pedido #${p.id}`}
+                          <span className="ml-2 text-xs font-normal text-suave">
+                            {p.cliente_telefono}
+                          </span>
+                        </p>
+                        <p className="truncate text-xs text-suave">
+                          {p.cliente_direccion}
+                        </p>
+                      </div>
+                      <span className="w-24 text-right font-semibold">
+                        {dinero(p.total)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-suave">
+                      #{p.id} · entregado {hora(p.cerrado_en)} · {p.items} items
+                      {p.domiciliario_nombre ? ` · 🛵 ${p.domiciliario_nombre}` : ''}
+                    </p>
+                  </Link>
                 </li>
               ))}
             </ul>
