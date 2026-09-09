@@ -137,6 +137,27 @@ CREATE INDEX IF NOT EXISTS ix_items_pedido   ON pedido_items (pedido_id);
 CREATE INDEX IF NOT EXISTS ix_pagos_pedido   ON pagos (pedido_id);
 CREATE INDEX IF NOT EXISTS ix_pagos_caja     ON pagos (caja_sesion_id);
 
+-- Un salon de arranque, solo si no hay ninguna mesa todavia. Se renombran, se
+-- agregan o se quitan segun como sea el local de verdad.
+INSERT INTO mesas (nombre, zona, capacidad)
+SELECT * FROM (VALUES
+  ('Mesa 1', 'Salon', 4),
+  ('Mesa 2', 'Salon', 4),
+  ('Mesa 3', 'Salon', 4),
+  ('Mesa 4', 'Salon', 4),
+  ('Mesa 5', 'Salon', 4),
+  ('Mesa 6', 'Salon', 4),
+  ('Mesa 7', 'Salon', 6),
+  ('Mesa 8', 'Salon', 6),
+  ('Terraza 1', 'Terraza', 4),
+  ('Terraza 2', 'Terraza', 4),
+  ('Terraza 3', 'Terraza', 4),
+  ('Terraza 4', 'Terraza', 4),
+  ('Barra 1', 'Barra', 2),
+  ('Barra 2', 'Barra', 2)
+) AS nuevas(nombre, zona, capacidad)
+WHERE NOT EXISTS (SELECT 1 FROM mesas);
+
 -- Solo aplica en Supabase: alli la base queda ademas detras de una API publica
 -- y sin esto la llave anonima alcanzaria para leer las ventas. El POS entra
 -- con la contraseña del proyecto y no se ve afectado. En Neon o en cualquier
