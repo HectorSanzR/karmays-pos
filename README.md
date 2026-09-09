@@ -16,25 +16,33 @@ servicio.
 
 ## Poner a andar el proyecto
 
-Hace falta una base en Supabase (gratis) y su cadena de conexion.
+Hace falta una base **Postgres** y su cadena de conexion. Sirve cualquiera: el
+codigo no depende del proveedor.
 
-1. En Supabase: **New project**. Guarda la contraseña que te pide, no la vuelve
-   a mostrar. Elige la region mas cercana (para Colombia, `East US` o
-   `South America`).
-2. **Project settings > Database > Connection string > Transaction pooler**
-   (puerto **6543**, no el 5432). Copia esa cadena y reemplaza
-   `[YOUR-PASSWORD]` por la contraseña del paso 1.
-3. En el proyecto, copia `.env.example` como `.env.local` y pega la cadena en
-   `DATABASE_URL`. Ese archivo no se sube a git.
-4. Crea las tablas y carga la carta:
+**Neon** (neon.tech) es la recomendada: plan gratis de verdad, sin tarjeta y
+sin fecha de vencimiento. Al crear el proyecto entrega la cadena de conexion;
+hay que copiar la que dice **Pooled connection** (el host lleva `-pooler`),
+que es la que aguanta bien las funciones serverless.
+
+Con el plan gratis de Neon la base **se duerme** tras unos minutos sin uso, y
+la primera consulta despues de eso tarda algo mas. En pleno servicio no se
+nota; el primer pedido de la mañana si puede demorarse un segundo.
+
+Tambien sirven **Supabase** (si te queda cupo de proyectos) o cualquier
+Postgres administrado. Evita **Render**: su Postgres gratuito se borra al mes.
+
+1. Crea la base y copia su cadena de conexion.
+2. Copia `.env.example` como `.env.local` y pegala en `DATABASE_URL`. Ese
+   archivo no se sube a git.
+3. Crea las tablas y carga la carta:
 
 ```bash
 npm run db:esquema
 npm run carta
 ```
 
-5. Si vienes del POS viejo con SQLite y quieres conservar lo que ya hay
-   (carta, mesas, personas con sus codigos, turnos y pedidos):
+4. Si vienes del POS con SQLite y quieres subir lo que ya hay (carta, mesas,
+   personas con sus codigos, turnos y pedidos):
 
 ```bash
 npm run db:migrar
@@ -45,7 +53,11 @@ npm run db:migrar
    duplica nada. Las sesiones abiertas no se copian: cada quien vuelve a
    marcar su codigo.
 
-6. Para trabajar en local contra esa misma base:
+   **Para una demostracion, saltate este paso.** Subir la base real expone
+   nombres, telefonos y direcciones de clientes de verdad a quien vea la
+   pantalla. Con el esquema y la carta basta para mostrar el sistema completo.
+
+5. Para trabajar en local contra esa misma base:
 
 ```bash
 npm run dev
@@ -53,12 +65,26 @@ npm run dev
 
 ## Subirlo a Netlify
 
-1. Sube el repositorio a GitHub.
-2. En Netlify: **Add new site > Import an existing project** y elige el repo.
-   El `netlify.toml` ya trae el comando de build y el plugin de Next.
-3. En **Site configuration > Environment variables** agrega `DATABASE_URL` con
-   la misma cadena del pooler. **Sin eso el sitio arranca y falla.**
-4. Deploy. Cada `git push` vuelve a desplegar.
+Lo mas rapido, sin pasar por GitHub:
+
+```bash
+npx netlify-cli login
+```
+
+```bash
+npx netlify-cli env:set DATABASE_URL "la-cadena-de-tu-base"
+```
+
+```bash
+npx netlify-cli deploy --build --prod
+```
+
+**Sin esa variable el sitio levanta y falla en la primera pantalla.**
+
+Si prefieres que cada cambio se publique solo, sube el repo a GitHub y en
+Netlify usa **Add new site > Import an existing project**: el `netlify.toml`
+ya trae el comando de build y el plugin de Next, y la variable se agrega en
+**Site configuration > Environment variables**.
 
 La primera vez que se abra la web, si no hay usuarios, pide crear el
 administrador. Si migraste desde SQLite, entra con el codigo que ya tenias.

@@ -1,5 +1,5 @@
 /**
- * Crea las tablas en Supabase. Se corre una vez al montar el proyecto, y de
+ * Crea las tablas en la base Postgres. Se corre una vez al montar el proyecto, y de
  * nuevo sin miedo cada vez que cambie sql/esquema.sql: todo es IF NOT EXISTS.
  *
  *   npm run db:esquema
@@ -12,7 +12,7 @@ const url = process.env.DATABASE_URL;
 if (!url) {
   console.error(
     'Falta DATABASE_URL. Ponla en .env.local con la cadena de conexion de\n' +
-      'Supabase (Project settings > Database > Connection string > Transaction pooler).',
+      'tu base Postgres (Neon, Supabase, la que sea).',
   );
   process.exit(1);
 }

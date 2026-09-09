@@ -17,9 +17,9 @@ function crearPool(): pg.Pool {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error(
-      'Falta DATABASE_URL. Es la cadena de conexion de Supabase (el pooler, ' +
-        'puerto 6543). En local va en .env.local y en Netlify en las variables ' +
-        'de entorno del sitio.',
+      'Falta DATABASE_URL. Es la cadena de conexion de tu base Postgres (usa ' +
+        'la conexion agrupada). En local va en .env.local y en Netlify en las ' +
+        'variables de entorno del sitio.',
     );
   }
 

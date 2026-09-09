@@ -1,5 +1,5 @@
 /**
- * Sube a Supabase lo que hoy vive en datos/pos.db: la carta, las mesas, la
+ * Sube a la base Postgres lo que hoy vive en datos/pos.db: la carta, las mesas, la
  * gente con sus codigos, los turnos de caja y todos los pedidos con sus pagos.
  *
  *   npm run db:migrar
@@ -103,7 +103,7 @@ try {
   }
 
   await nueva.query('COMMIT');
-  console.log('\nListo. Revisa el POS apuntando a Supabase antes de dejar de usar el local.');
+  console.log('\nListo. Revisa el POS apuntando a la base nueva antes de dejar de usar el local.');
 } catch (e) {
   await nueva.query('ROLLBACK');
   console.error('Fallo la migracion, no se guardo nada:', e.message);

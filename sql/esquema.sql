@@ -137,17 +137,20 @@ CREATE INDEX IF NOT EXISTS ix_items_pedido   ON pedido_items (pedido_id);
 CREATE INDEX IF NOT EXISTS ix_pagos_pedido   ON pagos (pedido_id);
 CREATE INDEX IF NOT EXISTS ix_pagos_caja     ON pagos (caja_sesion_id);
 
--- La base la usa solo el servidor del POS con la contraseña del proyecto.
--- Nadie entra por la API publica de Supabase, asi que se cierra el acceso por
--- fila para todas las tablas: si alguien consigue la llave anonima, no ve nada.
+-- Solo aplica en Supabase: alli la base queda ademas detras de una API publica
+-- y sin esto la llave anonima alcanzaria para leer las ventas. El POS entra
+-- con la contraseña del proyecto y no se ve afectado. En Neon o en cualquier
+-- Postgres sin API publica no existe el rol 'anon' y este bloque no hace nada.
 DO $$
 DECLARE t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY[
-    'categorias', 'productos', 'ingredientes', 'producto_ingredientes',
-    'mesas', 'domiciliarios', 'usuarios', 'sesiones', 'intentos',
-    'caja_sesiones', 'pedidos', 'pedido_items', 'pagos'
-  ] LOOP
-    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-  END LOOP;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    FOREACH t IN ARRAY ARRAY[
+      'categorias', 'productos', 'ingredientes', 'producto_ingredientes',
+      'mesas', 'domiciliarios', 'usuarios', 'sesiones', 'intentos',
+      'caja_sesiones', 'pedidos', 'pedido_items', 'pagos'
+    ] LOOP
+      EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    END LOOP;
+  END IF;
 END $$;
