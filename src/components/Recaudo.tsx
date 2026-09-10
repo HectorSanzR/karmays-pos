@@ -75,6 +75,13 @@ export function Recaudo({
         </div>
 
         <div className="flex flex-wrap justify-center gap-2 pt-2">
+          <Link
+            href={`/pedido/${pedido.id}/recibo?imprimir=1`}
+            target="_blank"
+            className="btn-marca"
+          >
+            Imprimir recibo
+          </Link>
           <Link href={`/pedido/${pedido.id}/recibo`} className="btn-neutro">
             Ver recibo
           </Link>

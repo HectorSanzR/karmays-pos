@@ -165,6 +165,7 @@ export default async function Historial({
                       <th className="px-2 py-2 font-medium">Quien</th>
                       <th className="px-2 py-2 font-medium">Pago</th>
                       <th className="px-2 py-2 text-right font-medium">Total</th>
+                      <th className="px-2 py-2" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-borde">
@@ -250,6 +251,16 @@ function Fila({ p }: { p: PedidoHistorial }) {
       <td className="whitespace-nowrap px-2 py-2 text-right font-semibold">
         {dinero(p.total)}
       </td>
+      <td className="px-2 py-2 text-right">
+        <Link
+          href={`/pedido/${p.id}/recibo?imprimir=1`}
+          target="_blank"
+          title="Imprimir recibo"
+          className="rounded-lg border border-borde px-2 py-1 text-xs text-suave hover:border-marca hover:text-marca"
+        >
+          Imprimir
+        </Link>
+      </td>
     </tr>
   );
 }
@@ -261,7 +272,8 @@ function TarjetaPedido({ p }: { p: PedidoHistorial }) {
   return (
     <li>
       <Link
-        href={`/pedido/${p.id}/recibo`}
+        href={`/pedido/${p.id}/recibo?imprimir=1`}
+        target="_blank"
         className="block px-4 py-3 transition hover:bg-panel2"
       >
         <div className="flex items-baseline gap-2">
@@ -282,6 +294,8 @@ function TarjetaPedido({ p }: { p: PedidoHistorial }) {
           {hora(p.cerrado_en ?? p.creado_en)} · {p.items} items ·{' '}
           {NOMBRE_TIPO[p.tipo] ?? p.tipo}
         </p>
+
+        <p className="mt-1 text-xs font-semibold text-marca">Imprimir recibo →</p>
 
         <p className="text-xs">
           {anulado ? (

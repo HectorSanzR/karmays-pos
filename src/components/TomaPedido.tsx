@@ -220,6 +220,17 @@ export function TomaPedido({
             )}
 
             <div className="flex flex-wrap gap-2">
+              {/* La cuenta para la mesa antes de cobrar; ya cobrado, el
+                  recibo. Se abre en otra pestaña para no perder la comanda. */}
+              <Link
+                href={`/pedido/${pedido.id}/recibo?imprimir=1${
+                  cerrado ? '' : '&cuenta=1'
+                }`}
+                target="_blank"
+                className="btn-neutro flex-1 py-2"
+              >
+                {cerrado ? 'Imprimir recibo' : 'Imprimir cuenta'}
+              </Link>
               <button onClick={() => setVerDatos(true)} className="btn-neutro flex-1 py-2">
                 Datos
               </button>

@@ -10,23 +10,32 @@ export const dynamic = 'force-dynamic';
 
 export default async function Recibo({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ imprimir?: string; cuenta?: string }>;
 }) {
   await exigir('cobrar');
   const { id } = await params;
+  const { imprimir, cuenta } = await searchParams;
   const p = await obtenerPedido(Number(id));
   if (!p) notFound();
 
   const datos = negocio();
+  // La cuenta es la misma hoja, pero antes de pagar: sin los pagos y dicho
+  // con todas las letras, para que nadie la confunda con un recibo.
+  const esCuenta = cuenta === '1';
 
   return (
     <div className="mx-auto max-w-md space-y-4 p-4">
-      <div className="flex justify-between print:hidden">
-        <Link href="/" className="text-sm text-suave hover:text-texto">
-          ← Inicio
+      <div className="flex items-center justify-between gap-3 print:hidden">
+        <Link
+          href={`/pedido/${p.id}`}
+          className="text-sm text-suave hover:text-texto"
+        >
+          ← Volver al pedido
         </Link>
-        <BotonImprimir />
+        <BotonImprimir auto={imprimir === '1'} />
       </div>
 
       <div className="mx-auto w-full bg-white p-6 font-mono text-[13px] leading-relaxed text-black print:p-0">
@@ -37,6 +46,7 @@ export default async function Recibo({
           {datos?.telefonos?.length ? (
             <p>{datos.telefonos.join(' · ')}</p>
           ) : null}
+          {esCuenta && <p className="mt-1 text-base font-bold">CUENTA</p>}
           <p className="mt-2">
             {etiquetaOrden(p.numero, p.creado_en, p.id)}
             <br />
@@ -81,14 +91,20 @@ export default async function Recibo({
 
         <div className="my-3 border-t border-dashed border-black" />
 
-        {p.pagos.map((pg) => (
-          <Linea key={pg.id} k={pg.metodo} v={dinero(pg.monto)} />
-        ))}
-        {p.pagos.some((pg) => (pg.cambio ?? 0) > 0) && (
-          <Linea
-            k="Cambio"
-            v={dinero(p.pagos.reduce((s, pg) => s + (pg.cambio ?? 0), 0))}
-          />
+        {esCuenta ? (
+          <p className="text-center">Esta cuenta no es comprobante de pago</p>
+        ) : (
+          <>
+            {p.pagos.map((pg) => (
+              <Linea key={pg.id} k={pg.metodo} v={dinero(pg.monto)} />
+            ))}
+            {p.pagos.some((pg) => (pg.cambio ?? 0) > 0) && (
+              <Linea
+                k="Cambio"
+                v={dinero(p.pagos.reduce((s, pg) => s + (pg.cambio ?? 0), 0))}
+              />
+            )}
+          </>
         )}
 
         <p className="mt-4 text-center">Gracias por su visita</p>
