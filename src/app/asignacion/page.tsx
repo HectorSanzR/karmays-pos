@@ -8,6 +8,7 @@ import {
 } from '@/lib/consultas';
 import { dinero, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
+import { ChipCuenta } from '@/components/ChipCuenta';
 import {
   SelectorDomiciliario,
   type OpcionDomiciliario,
@@ -148,9 +149,7 @@ function Grupo({
                     {p.cliente_nombre ?? `Orden ${numeroOrden(p.numero, p.id)}`}
                   </span>
                   <EstadoChip estado={p.estado} />
-                  {p.pagado >= p.total && p.total > 0 && (
-                    <span className="chip bg-ok/15 text-ok">Pagado</span>
-                  )}
+                  <ChipCuenta pagado={p.pagado} total={p.total} />
                   <span className="font-semibold">{dinero(p.total)}</span>
                 </div>
                 <p className="truncate text-sm text-suave">{p.cliente_direccion}</p>

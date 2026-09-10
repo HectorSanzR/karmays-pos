@@ -3,7 +3,7 @@ import { exigir } from '@/lib/sesion';
 import { notFound } from 'next/navigation';
 import { obtenerPedido } from '@/lib/consultas';
 import { negocio } from '@/lib/db';
-import { dinero, etiquetaOrden, hora } from '@/lib/formato';
+import { dinero, etiquetaOrden, hora, nombreMetodo } from '@/lib/formato';
 import { BotonImprimir } from '@/components/BotonImprimir';
 
 export const dynamic = 'force-dynamic';
@@ -96,13 +96,21 @@ export default async function Recibo({
         ) : (
           <>
             {p.pagos.map((pg) => (
-              <Linea key={pg.id} k={pg.metodo} v={dinero(pg.monto)} />
+              <Linea key={pg.id} k={nombreMetodo(pg.metodo)} v={dinero(pg.monto)} />
             ))}
             {p.pagos.some((pg) => (pg.cambio ?? 0) > 0) && (
               <Linea
                 k="Cambio"
                 v={dinero(p.pagos.reduce((s, pg) => s + (pg.cambio ?? 0), 0))}
               />
+            )}
+            {/* Una cuenta partida se puede imprimir a medio pagar; decirlo
+                evita que el papel parezca un paz y salvo. */}
+            {p.cuenta.saldo > 0 && (
+              <div className="mt-1 flex justify-between border-t border-black pt-1 font-bold">
+                <span>FALTA POR PAGAR</span>
+                <span>{dinero(p.cuenta.saldo)}</span>
+              </div>
             )}
           </>
         )}

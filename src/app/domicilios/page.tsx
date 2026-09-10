@@ -4,6 +4,7 @@ import { listarPedidos } from '@/lib/consultas';
 import { crearPedidoDirecto } from '@/lib/acciones';
 import { dinero, hora, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
+import { ChipCuenta } from '@/components/ChipCuenta';
 
 export const dynamic = 'force-dynamic';
 
@@ -124,9 +125,7 @@ export default async function Domicilios() {
                         </p>
                       </div>
                       <EstadoChip estado={p.estado} />
-                      {p.pagado >= p.total && p.total > 0 && (
-                        <span className="chip bg-ok/15 text-ok">Pagado</span>
-                      )}
+                      <ChipCuenta pagado={p.pagado} total={p.total} />
                       <span className="w-24 text-right font-semibold">
                         {dinero(p.total)}
                       </span>

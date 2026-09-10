@@ -6,6 +6,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db, ahora } from './db';
 import { cajaAbierta, obtenerPedido, pedidoAbiertoDeMesa } from './consultas';
+import { dinero } from './formato';
 import {
   COOKIE,
   PERMISOS,
@@ -399,6 +400,8 @@ export interface ResultadoPago {
   error?: string;
   cambio?: number;
   cerrado?: boolean;
+  /** Lo que sigue debiendo despues de este pago. */
+  saldo?: number;
 }
 
 export async function registrarPago(
@@ -424,10 +427,17 @@ export async function registrarPago(
   const cambio =
     metodo === 'efectivo' && recibido ? Math.max(0, Math.round(recibido) - cobro) : 0;
 
-  await db.run(`INSERT INTO pagos
+  // El pago entra solo si lo abonado sigue siendo lo que se acaba de leer.
+  // Con la cuenta partida hay dos pantallas sobre el mismo pedido —la caja y
+  // el celular del domiciliario— y sin esta condicion las dos podrian cobrar
+  // el mismo saldo con un segundo de diferencia y dejar el pedido pagado dos
+  // veces. Si alguien se adelanto no se inserta nada y se avisa.
+  const puesto = await db.run(`INSERT INTO pagos
        (pedido_id, metodo, monto, recibido, cambio, referencia,
         caja_sesion_id, usuario_id, creado_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+     SELECT ?::int, ?::text, ?::int, ?::int, ?::int, ?::text, ?::int, ?::int, ?::text
+      WHERE (SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE pedido_id = ?) = ?
+     RETURNING id`,
     pedidoId,
     metodo,
     cobro,
@@ -437,7 +447,18 @@ export async function registrarPago(
     sesion.id,
     (await usuarioActual())?.id ?? null,
     ahora(),
+    pedidoId,
+    pedido.cuenta.pagado,
   );
+
+  if (puesto === undefined) {
+    return {
+      ok: false,
+      error:
+        'Alguien mas acaba de registrar un pago en este pedido. Vuelve a mirar ' +
+        'el saldo antes de cobrar.',
+    };
+  }
 
   const saldo = pedido.cuenta.saldo - cobro;
   if (saldo <= 0) {
@@ -457,16 +478,19 @@ export async function registrarPago(
   }
 
   refrescar();
-  return { ok: true, cambio, cerrado: saldo <= 0 };
+  return { ok: true, cambio, cerrado: saldo <= 0, saldo: Math.max(0, saldo) };
 }
 
 /**
- * Cobro desde la calle: el domiciliario marca por donde le pagaron y el
- * pedido queda entregado y saldado de una vez. Solo puede tocar los suyos.
+ * Cobro desde la calle: el domiciliario marca por donde le pagaron. Puede ir
+ * por partes —una parte en efectivo y el resto por Nequi es lo corriente— asi
+ * que solo se da por entregado cuando ya no queda saldo. Sin `monto` cobra
+ * todo lo que falte. Solo puede tocar los suyos.
  */
 export async function cobrarEnRuta(
   pedidoId: number,
   metodo: MetodoPago,
+  monto?: number,
 ): Promise<ResultadoPago> {
   const usuario = await usuarioActual();
   if (!usuario?.domiciliario_id) return { ok: false, error: 'Sin permiso' };
@@ -478,18 +502,28 @@ export async function cobrarEnRuta(
   }
   if (pedido.cuenta.saldo <= 0) return { ok: false, error: 'Ya estaba saldado' };
 
-  const r = await registrarPago(pedidoId, metodo, pedido.cuenta.saldo);
+  const cobro = monto === undefined ? pedido.cuenta.saldo : Math.round(monto);
+  if (cobro > pedido.cuenta.saldo) {
+    return {
+      ok: false,
+      error: `Le falta pagar ${dinero(pedido.cuenta.saldo)}, no cobres de mas`,
+    };
+  }
+
+  const r = await registrarPago(pedidoId, metodo, cobro);
   if (!r.ok) return r;
 
-  // Cobrar en la puerta es entregar: se cierra con su hora, que es la que
-  // despues aparece en el historial y en la liquidacion.
-  await db.run(
-    `UPDATE pedidos SET estado = 'pagado', cerrado_en = COALESCE(cerrado_en, ?)
-      WHERE id = ?`,
-    ahora(),
-    pedidoId,
-  );
-  refrescar();
+  // Cobrar en la puerta es entregar, pero solo cuando ya no queda saldo: si
+  // fue un abono, el pedido sigue abierto esperando el resto.
+  if (r.cerrado) {
+    await db.run(
+      `UPDATE pedidos SET estado = 'pagado', cerrado_en = COALESCE(cerrado_en, ?)
+        WHERE id = ?`,
+      ahora(),
+      pedidoId,
+    );
+    refrescar();
+  }
   return r;
 }
 
@@ -498,8 +532,32 @@ export async function anularPago(pagoId: number) {
   if (!pago) return;
 
   await db.run('DELETE FROM pagos WHERE id = ?', pagoId);
-  await db.run(`UPDATE pedidos SET estado = 'abierto', cerrado_en = NULL, caja_sesion_id = NULL
-      WHERE id = ? AND estado = 'pagado'`, pago.pedido_id);
+
+  const pedido = await obtenerPedido(pago.pedido_id);
+  if (!pedido) {
+    refrescar();
+    return;
+  }
+
+  // Anular una de las partes de una cuenta partida no puede borrar el rastro
+  // de las otras: mientras quede algun pago, el pedido se queda en su turno.
+  if (pedido.cuenta.saldo > 0 && pedido.estado === 'pagado') {
+    const quedan = pedido.cuenta.pagado > 0;
+    // Un domicilio ya repartido vuelve a 'entregado' y no a 'abierto': la
+    // comida ya salio, lo unico que falta es la plata.
+    const vuelveA =
+      pedido.tipo === 'domicilio' && pedido.domiciliario_id ? 'entregado' : 'abierto';
+
+    await db.run(
+      `UPDATE pedidos SET estado = ?, cerrado_en = NULL,
+              caja_sesion_id = CASE WHEN ?::boolean THEN caja_sesion_id ELSE NULL END
+        WHERE id = ?`,
+      vuelveA,
+      quedan,
+      pago.pedido_id,
+    );
+  }
+
   refrescar();
 }
 

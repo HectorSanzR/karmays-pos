@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { anularPago, fijarPropina, registrarPago } from '@/lib/acciones';
-import { dinero, etiquetaOrden } from '@/lib/formato';
+import { dinero, etiquetaOrden, nombreMetodo } from '@/lib/formato';
 import { Comprobantes } from './Comprobantes';
 import type { MetodoPago, PedidoCompleto } from '@/lib/tipos';
 import type { Comprobante } from '@/lib/consultas';
@@ -70,8 +70,21 @@ export function Recaudo({
             domicilios para asignarle domiciliario y despacharlo.
           </p>
         )}
-        <div className="mx-auto max-w-xs text-left">
+        {pedido.pagos.length > 1 && (
+          <p className="text-sm text-suave">
+            {pedido.pagos
+              .map((p) => `${nombreMetodo(p.metodo)} ${dinero(p.monto)}`)
+              .join('  +  ')}
+          </p>
+        )}
+
+        <div className="mx-auto max-w-xs space-y-4 text-left">
           <Comprobantes pedidoId={pedido.id} comprobantes={comprobantes} />
+          <ListaPagos
+            pagos={pedido.pagos}
+            pendiente={pendiente}
+            anular={(id) => iniciar(() => void anularPago(id))}
+          />
         </div>
 
         <div className="flex flex-wrap justify-center gap-2 pt-2">
@@ -210,12 +223,22 @@ export function Recaudo({
             onChange={(e) => setMonto(e.target.value)}
           />
           {cuenta.saldo > 0 && nMonto !== cuenta.saldo && (
-            <button
-              onClick={() => setMonto(String(cuenta.saldo))}
-              className="mt-2 text-xs text-marca"
-            >
-              Cobrar el saldo completo ({dinero(cuenta.saldo)})
-            </button>
+            <div className="mt-2 flex flex-wrap items-baseline gap-3">
+              <button
+                onClick={() => setMonto(String(cuenta.saldo))}
+                className="text-xs text-marca"
+              >
+                Cobrar el saldo completo ({dinero(cuenta.saldo)})
+              </button>
+              {/* Cobrar por partes es normal: media cuenta en efectivo y el
+                  resto por Nequi. Lo que no puede pasar es perder de vista
+                  cuanto queda debiendo. */}
+              <span className="text-xs text-suave">
+                {nMonto > cuenta.saldo
+                  ? `Se pasa: solo faltan ${dinero(cuenta.saldo)}`
+                  : `Quedarian ${dinero(cuenta.saldo - nMonto)} pendientes`}
+              </span>
+            </div>
           )}
         </div>
 
@@ -302,29 +325,53 @@ export function Recaudo({
       </section>
 
       {/* ------------------------------------------------------ pagos hechos */}
-      {pedido.pagos.length > 0 && (
-        <section className="tarjeta overflow-hidden">
-          <h2 className="border-b border-borde px-4 py-3 text-sm font-semibold">
-            Pagos registrados
-          </h2>
-          <ul className="divide-y divide-borde text-sm">
-            {pedido.pagos.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="flex-1 capitalize">{p.metodo}</span>
-                <span className="font-semibold">{dinero(p.monto)}</span>
-                <button
-                  disabled={pendiente}
-                  onClick={() => iniciar(() => void anularPago(p.id))}
-                  className="text-xs text-alerta hover:underline"
-                >
-                  anular
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <ListaPagos
+        pagos={pedido.pagos}
+        pendiente={pendiente}
+        anular={(id) => iniciar(() => void anularPago(id))}
+      />
     </div>
+  );
+}
+
+/**
+ * Lo ya cobrado, con su boton de anular. Va tanto mientras queda saldo como
+ * cuando la cuenta ya cerro: una cuenta partida se puede registrar mal —el
+ * efectivo por Nequi, por ejemplo— y despues de cerrarla tambien hay que
+ * poder corregirla.
+ */
+function ListaPagos({
+  pagos,
+  pendiente,
+  anular,
+}: {
+  pagos: PedidoCompleto['pagos'];
+  pendiente: boolean;
+  anular: (id: number) => void;
+}) {
+  if (pagos.length === 0) return null;
+
+  return (
+    <section className="tarjeta overflow-hidden text-left">
+      <h2 className="border-b border-borde px-4 py-3 text-sm font-semibold">
+        Pagos registrados ({pagos.length})
+      </h2>
+      <ul className="divide-y divide-borde text-sm">
+        {pagos.map((p) => (
+          <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="flex-1">{nombreMetodo(p.metodo)}</span>
+            <span className="font-semibold">{dinero(p.monto)}</span>
+            <button
+              disabled={pendiente}
+              onClick={() => anular(p.id)}
+              className="text-xs text-alerta hover:underline"
+            >
+              anular
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
