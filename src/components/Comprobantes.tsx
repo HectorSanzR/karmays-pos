@@ -53,10 +53,28 @@ export function Comprobantes({
   compacto?: boolean;
 }) {
   const [subiendo, setSubiendo] = useState(false);
+  const [borrando, setBorrando] = useState<number | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
   const [error, setError] = useState('');
   const entrada = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const borrar = async (id: number) => {
+    setError('');
+    setBorrando(id);
+    try {
+      const r = await fetch(`/api/comprobante/${id}`, { method: 'DELETE' });
+      if (!r.ok) {
+        const datos = await r.json().catch(() => ({}));
+        throw new Error(datos.error ?? 'No se pudo quitar');
+      }
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo quitar');
+    } finally {
+      setBorrando(null);
+    }
+  };
 
   const subir = useCallback(
     async (archivo: File) => {
@@ -109,7 +127,7 @@ export function Comprobantes({
       {comprobantes.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {comprobantes.map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="relative">
               <a
                 href={`/api/comprobante/${c.id}`}
                 target="_blank"
@@ -126,6 +144,19 @@ export function Comprobantes({
                   className="h-24 w-24 object-cover"
                 />
               </a>
+
+              <button
+                type="button"
+                disabled={borrando === c.id}
+                aria-label="Quitar este comprobante"
+                onClick={() => {
+                  if (confirm('¿Quitar esta imagen del pedido?')) void borrar(c.id);
+                }}
+                className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full border border-alerta/50 bg-fondo text-sm text-alerta shadow disabled:opacity-40"
+              >
+                {borrando === c.id ? '·' : '✕'}
+              </button>
+
               <p className="mt-1 text-center text-[10px] text-suave">
                 {hora(c.creado_en)}
               </p>

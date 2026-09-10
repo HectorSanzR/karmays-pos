@@ -38,3 +38,35 @@ export async function GET(
     },
   });
 }
+
+/** Borra un comprobante subido por equivocacion. */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const usuario = await usuarioActual();
+  if (!usuario) return NextResponse.json({ error: 'Sin sesion' }, { status: 401 });
+
+  const { id } = await params;
+  const fila = (await db.get(
+    `SELECT c.id, p.domiciliario_id
+       FROM comprobantes c
+       JOIN pedidos p ON p.id = c.pedido_id
+      WHERE c.id = ?`,
+    Number(id),
+  )) as { id: number; domiciliario_id: number | null } | undefined;
+
+  if (!fila) return NextResponse.json({ error: 'No existe' }, { status: 404 });
+
+  // Puede borrarla quien pudo subirla: quien cobra, o el domiciliario de ese
+  // pedido.
+  const suyo =
+    usuario.domiciliario_id !== null &&
+    fila.domiciliario_id === usuario.domiciliario_id;
+  if (!puede(usuario, 'cobrar') && !suyo) {
+    return NextResponse.json({ error: 'Sin permiso' }, { status: 403 });
+  }
+
+  await db.run('DELETE FROM comprobantes WHERE id = ?', fila.id);
+  return NextResponse.json({ ok: true });
+}
