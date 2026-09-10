@@ -272,11 +272,12 @@ export function Recaudo({
           </div>
         )}
 
-        {metodo !== 'efectivo' && (
-          <div className="border-t border-borde pt-4">
-            <Comprobantes pedidoId={pedido.id} comprobantes={comprobantes} />
-          </div>
-        )}
+        {/* Siempre a la vista, no solo con pago digital: escondiendolo al
+            elegir efectivo, los comprobantes ya adjuntos desaparecian de la
+            pantalla y parecia que se hubieran perdido. */}
+        <div className="border-t border-borde pt-4">
+          <Comprobantes pedidoId={pedido.id} comprobantes={comprobantes} />
+        </div>
 
         {error && (
           <p className="rounded-lg border border-alerta/40 bg-alerta/10 px-3 py-2 text-sm text-alerta">
