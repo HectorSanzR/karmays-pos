@@ -3,13 +3,15 @@ import { exigir } from '@/lib/sesion';
 import {
   cajaAbierta,
   controlDomiciliarios,
-  listarDomiciliarios,
   listarPedidos,
   type ResumenPedido,
 } from '@/lib/consultas';
 import { dinero, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
-import { SelectorDomiciliario } from '@/components/SelectorDomiciliario';
+import {
+  SelectorDomiciliario,
+  type OpcionDomiciliario,
+} from '@/components/SelectorDomiciliario';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +26,16 @@ export default async function Asignacion() {
   await exigir('asignacion');
 
   const pedidos = await listarPedidos('domicilio', ACTIVOS);
-  const domiciliarios = await listarDomiciliarios();
   const caja = await cajaAbierta();
   const gente = await controlDomiciliarios(caja?.id ?? null);
+
+  // Los mismos nombres del panel de la derecha, pero como recuadros para
+  // tocar. Va la carga de cada uno: es lo que decide a quien se le entrega.
+  const domiciliarios: OpcionDomiciliario[] = gente.map((d) => ({
+    id: d.id,
+    nombre: d.nombre,
+    en_ruta: d.en_ruta,
+  }));
 
   const sinAsignar = pedidos.filter((p) => !p.domiciliario_id);
   const porDespachar = pedidos.filter(
@@ -114,7 +123,7 @@ function Grupo({
   titulo: string;
   vacio: string;
   pedidos: ResumenPedido[];
-  domiciliarios: Awaited<ReturnType<typeof listarDomiciliarios>>;
+  domiciliarios: OpcionDomiciliario[];
   resaltado?: boolean;
 }) {
   return (
@@ -159,6 +168,7 @@ function Grupo({
                 <SelectorDomiciliario
                   pedidoId={p.id}
                   asignadoA={p.domiciliario_id}
+                  asignadoNombre={p.domiciliario_nombre}
                   estado={p.estado}
                   domiciliarios={domiciliarios}
                   conDespacho
