@@ -1,7 +1,7 @@
 import { cajaAbierta, listarPedidos, resumenCaja } from '@/lib/consultas';
 import { exigir } from '@/lib/sesion';
 import { abrirCaja, cerrarCaja } from '@/lib/acciones';
-import { dinero, hora, nombreMetodo } from '@/lib/formato';
+import { dinero, hora, nombreMetodo, numeroOrden } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +98,7 @@ export default async function Caja() {
             <ul className="mt-2 space-y-1 text-xs">
               {abiertos.map((p) => (
                 <li key={p.id}>
-                  #{p.id} · {p.mesa_nombre ?? p.cliente_nombre ?? p.tipo} ·{' '}
+                  {numeroOrden(p.numero, p.id)} · {p.mesa_nombre ?? p.cliente_nombre ?? p.tipo} ·{' '}
                   {dinero(p.total)}
                 </li>
               ))}

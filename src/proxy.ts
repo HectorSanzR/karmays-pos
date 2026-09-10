@@ -10,7 +10,6 @@ import { COOKIE } from '@/lib/constantes';
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname === '/entrar') return NextResponse.next();
-  if (pathname === '/api/diagnostico') return NextResponse.next();
   if (req.cookies.has(COOKIE)) return NextResponse.next();
 
   return NextResponse.redirect(new URL('/entrar', req.url));

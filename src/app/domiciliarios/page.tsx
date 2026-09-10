@@ -10,7 +10,7 @@ import {
   type ResumenPedido,
 } from '@/lib/consultas';
 import { crearUsuario } from '@/lib/acciones';
-import { dinero, hora, nombreMetodo, transcurrido } from '@/lib/formato';
+import { dinero, hora, nombreMetodo, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 import { BotonDesactivar } from '@/components/BotonDesactivar';
 
@@ -164,7 +164,7 @@ export default async function Domiciliarios() {
               {sinAsignar.map((p) => (
                 <li key={p.id}>
                   <Link href={`/pedido/${p.id}`} className="hover:text-marca">
-                    #{p.id} · {p.cliente_nombre} · {dinero(p.total)}
+                    {numeroOrden(p.numero, p.id)} · {p.cliente_nombre} · {dinero(p.total)}
                   </Link>
                 </li>
               ))}
@@ -276,7 +276,7 @@ function Ficha({
                   className="flex items-center gap-2 hover:text-marca"
                 >
                   <span className="min-w-0 flex-1 truncate">
-                    #{p.id} {p.cliente_direccion}
+                    {numeroOrden(p.numero, p.id)} {p.cliente_direccion}
                   </span>
                   <EstadoChip estado={p.estado} />
                   <span className="whitespace-nowrap text-suave">
@@ -299,7 +299,7 @@ function Ficha({
               <li key={e.id} className="flex items-center gap-2">
                 <span className="w-10 shrink-0 text-suave">{hora(e.cerrado_en)}</span>
                 <span className="min-w-0 flex-1 truncate">
-                  #{e.id} {e.cliente_nombre}
+                  {numeroOrden(e.numero, e.id)} {e.cliente_nombre}
                 </span>
                 <span className="shrink-0 text-suave">
                   {(e.metodos ?? '')

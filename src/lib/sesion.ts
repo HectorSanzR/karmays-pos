@@ -11,6 +11,7 @@ export type Seccion =
   | 'inicio'
   | 'mesas'
   | 'domicilios'
+  | 'asignacion'
   | 'domiciliarios'
   | 'mi-ruta'
   | 'cobrar'
@@ -33,6 +34,7 @@ export const PERMISOS: Record<Rol, Permiso> = {
       'inicio',
       'mesas',
       'domicilios',
+      'asignacion',
       'domiciliarios',
       'cobrar',
       'caja',
@@ -47,6 +49,7 @@ export const PERMISOS: Record<Rol, Permiso> = {
       'inicio',
       'mesas',
       'domicilios',
+      'asignacion',
       'domiciliarios',
       'cobrar',
       'caja',
@@ -58,10 +61,17 @@ export const PERMISOS: Record<Rol, Permiso> = {
     etiqueta: 'Mesero',
     secciones: ['mesas'],
   },
+  // Quien contesta el WhatsApp: toma el pedido y ya. Asignar es de despacho,
+  // para que una sola persona no haga las dos cosas.
   recepcion: {
     inicio: '/domicilios',
     etiqueta: 'Recepcion de pedidos',
-    secciones: ['domicilios', 'domiciliarios'],
+    secciones: ['domicilios'],
+  },
+  despachador: {
+    inicio: '/asignacion',
+    etiqueta: 'Despacho',
+    secciones: ['asignacion', 'domiciliarios'],
   },
   domiciliario: {
     inicio: '/mi-ruta',

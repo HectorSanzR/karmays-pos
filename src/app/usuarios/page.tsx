@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 
 const ROLES: [Rol, string][] = [
   ['mesero', 'Mesero — solo mesas y comandas'],
-  ['recepcion', 'Recepcion — domicilios por WhatsApp'],
+  ['recepcion', 'Recepcion — toma los domicilios'],
+  ['despachador', 'Despacho — asigna los domicilios'],
   ['domiciliario', 'Domiciliario — solo sus entregas'],
   ['cajero', 'Cajero — cobra y cuadra caja'],
   ['admin', 'Administrador — todo'],

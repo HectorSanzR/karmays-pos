@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { AccionesEntrega } from './AccionesEntrega';
 import { EstadoChip } from './EstadoChip';
-import { dinero, hora, nombreMetodo, transcurrido } from '@/lib/formato';
+import { dinero, hora, nombreMetodo, numeroOrden, transcurrido } from '@/lib/formato';
 import type { PedidoCompleto } from '@/lib/tipos';
 import type { CobroMetodo, EntregaDelTurno } from '@/lib/consultas';
 
@@ -96,7 +96,7 @@ export function MiRuta({
                 >
                   <div className="flex items-center gap-2">
                     <span className="min-w-0 flex-1 truncate font-semibold">
-                      {e.cliente_nombre ?? `Pedido #${e.id}`}
+                      {e.cliente_nombre ?? `Orden ${numeroOrden(e.numero, e.id)}`}
                     </span>
                     <span className="whitespace-nowrap font-semibold">
                       {dinero(e.total)}
@@ -133,7 +133,7 @@ function Tarjeta({ pedido }: { pedido: PedidoCompleto }) {
               {pedido.cliente_nombre}
             </h2>
             <p className="text-xs text-suave">
-              #{pedido.id} · {transcurrido(pedido.creado_en)}
+              {numeroOrden(pedido.numero, pedido.id)} · {transcurrido(pedido.creado_en)}
             </p>
           </div>
           <EstadoChip estado={pedido.estado} />

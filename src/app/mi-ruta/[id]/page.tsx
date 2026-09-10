@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { obtenerPedido } from '@/lib/consultas';
+import { comprobantesDe, obtenerPedido } from '@/lib/consultas';
 import { exigir } from '@/lib/sesion';
-import { dinero, hora, nombreMetodo, transcurrido } from '@/lib/formato';
+import { dinero, etiquetaOrden, hora, nombreMetodo, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 import { AccionesEntrega } from '@/components/AccionesEntrega';
+import { Comprobantes } from '@/components/Comprobantes';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,9 @@ export default async function DetalleEntrega({
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold">{pedido.cliente_nombre}</h1>
             <p className="text-xs text-suave">
-              Pedido #{pedido.id} · {transcurrido(pedido.creado_en)}
+              {etiquetaOrden(pedido.numero, pedido.creado_en, pedido.id)}
+              <br />
+              {transcurrido(pedido.creado_en)}
             </p>
           </div>
           <EstadoChip estado={pedido.estado} />
@@ -114,6 +117,13 @@ export default async function DetalleEntrega({
           </ul>
         </section>
       )}
+
+      <section className="tarjeta p-4">
+        <Comprobantes
+          pedidoId={pedido.id}
+          comprobantes={await comprobantesDe(pedido.id)}
+        />
+      </section>
 
       {!cerrado && (
         <section className="tarjeta p-4">

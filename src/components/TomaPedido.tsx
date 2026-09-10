@@ -12,7 +12,7 @@ import {
   quitarItem,
   actualizarPedido,
 } from '@/lib/acciones';
-import { dinero, transcurrido } from '@/lib/formato';
+import { dinero, etiquetaOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from './EstadoChip';
 import type {
   Categoria,
@@ -55,7 +55,9 @@ export function TomaPedido({
   const sinEnviar = pedido.items.filter((i) => i.estado === 'pendiente').length;
   const cerrado = pedido.estado === 'pagado' || pedido.estado === 'anulado';
   const titulo =
-    pedido.mesa_nombre ?? pedido.cliente_nombre ?? `Pedido #${pedido.id}`;
+    pedido.mesa_nombre ??
+    pedido.cliente_nombre ??
+    etiquetaOrden(pedido.numero, pedido.creado_en, pedido.id);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[1fr_380px]">
@@ -117,7 +119,8 @@ export function TomaPedido({
             <div className="min-w-0">
               <h1 className="truncate text-lg font-bold">{titulo}</h1>
               <p className="text-xs text-suave">
-                #{pedido.id} · {transcurrido(pedido.creado_en)}
+                {etiquetaOrden(pedido.numero, pedido.creado_en, pedido.id)} ·{' '}
+                {transcurrido(pedido.creado_en)}
                 {pedido.comensales ? ` · ${pedido.comensales} pax` : ''}
               </p>
               {pedido.tipo === 'domicilio' && (
@@ -168,8 +171,16 @@ export function TomaPedido({
                       className="min-w-0 flex-1 text-left"
                     >
                       <p className="truncate text-sm font-semibold">{it.nombre}</p>
-                      {it.notas && (
-                        <p className="truncate text-xs text-marca">{it.notas}</p>
+                      {it.notas ? (
+                        <p className="truncate text-xs text-marca">✎ {it.notas}</p>
+                      ) : (
+                        // El aviso estaba escondido: nadie adivinaba que
+                        // tocando el plato se le ponen las modificaciones.
+                        !cerrado && (
+                          <p className="text-xs text-suave underline decoration-dotted">
+                            + nota / sin ingredientes
+                          </p>
+                        )
                       )}
                       {it.estado === 'pendiente' && (
                         <p className="text-[10px] uppercase text-suave">sin enviar</p>
@@ -382,45 +393,70 @@ function ModalItem({
   const [texto, setTexto] = useState(inicial);
   const [pendiente, iniciar] = useTransition();
 
-  const alternar = (frase: string) => {
-    setTexto((t) => {
-      const partes = t
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const i = partes.indexOf(frase);
-      if (i >= 0) partes.splice(i, 1);
-      else partes.push(frase);
-      return partes.join(', ');
-    });
-  };
-
-  const activa = (frase: string) =>
+  const partes = () =>
     texto
       .split(',')
       .map((s) => s.trim())
-      .includes(frase);
+      .filter(Boolean);
+
+  /**
+   * Cada ingrediente da la vuelta: nada → "sin lechuga" → "con lechuga" →
+   * nada. Asi se arma de un toque "sin lechuga, con cebolla", que es como se
+   * pide de verdad.
+   */
+  const rotar = (ing: string) => {
+    const sin = `sin ${ing.toLowerCase()}`;
+    const con = `con ${ing.toLowerCase()}`;
+
+    // Se calcula sobre el valor anterior y no sobre el del render: tocando dos
+    // ingredientes seguidos, el segundo toque pisaba al primero.
+    setTexto((previo) => {
+      const lista = previo
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const tenia = lista.includes(sin) ? 'sin' : lista.includes(con) ? 'con' : null;
+      const resto = lista.filter((x) => x !== sin && x !== con);
+
+      if (tenia === null) resto.push(sin);
+      else if (tenia === 'sin') resto.push(con);
+
+      return resto.join(', ');
+    });
+  };
+
+  const estadoDe = (ing: string): 'sin' | 'con' | null => {
+    const lista = partes();
+    if (lista.includes(`sin ${ing.toLowerCase()}`)) return 'sin';
+    if (lista.includes(`con ${ing.toLowerCase()}`)) return 'con';
+    return null;
+  };
 
   return (
     <Modal titulo={item.nombre} onCerrar={onCerrar}>
       <div className="space-y-4">
         {ingredientes.length > 0 && (
           <div>
-            <p className="etiqueta">Quitar ingredientes</p>
+            <p className="etiqueta">Ingredientes</p>
+            <p className="mb-2 text-xs text-suave">
+              Toca una vez para quitarlo, otra vez para pedirlo con extra.
+            </p>
             <div className="flex flex-wrap gap-2">
               {ingredientes.map((ing) => {
-                const frase = `sin ${ing.toLowerCase()}`;
+                const estado = estadoDe(ing);
                 return (
                   <button
                     key={ing}
-                    onClick={() => alternar(frase)}
+                    onClick={() => rotar(ing)}
                     className={`rounded-lg border px-3 py-2 text-sm ${
-                      activa(frase)
+                      estado === 'sin'
                         ? 'border-alerta bg-alerta/15 text-alerta'
-                        : 'border-borde bg-panel2 text-suave'
+                        : estado === 'con'
+                          ? 'border-ok bg-ok/15 text-ok'
+                          : 'border-borde bg-panel2 text-suave'
                     }`}
                   >
-                    {frase}
+                    {estado === null ? ing : `${estado} ${ing.toLowerCase()}`}
                   </button>
                 );
               })}
@@ -438,8 +474,11 @@ function ModalItem({
             rows={3}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="termino medio, salsa aparte, para llevar..."
+            placeholder="sin lechuga, con cebolla, salsa aparte, bien caliente..."
           />
+          <p className="mt-1 text-xs text-suave">
+            Se escribe tal cual en la comanda de cocina.
+          </p>
         </div>
 
         <div className="flex gap-2">

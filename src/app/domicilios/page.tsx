@@ -1,10 +1,9 @@
 import Link from 'next/link';
 import { exigir } from '@/lib/sesion';
-import { listarDomiciliarios, listarPedidos } from '@/lib/consultas';
+import { listarPedidos } from '@/lib/consultas';
 import { crearPedidoDirecto } from '@/lib/acciones';
-import { dinero, hora, transcurrido } from '@/lib/formato';
+import { dinero, hora, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
-import { SelectorDomiciliario } from '@/components/SelectorDomiciliario';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +18,6 @@ export default async function Domicilios() {
     'entregado',
   ]);
   const cerrados = (await listarPedidos('domicilio', ['pagado'])).slice(0, 20);
-  const domiciliarios = await listarDomiciliarios();
 
   return (
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[380px_1fr]">
@@ -100,9 +98,9 @@ export default async function Domicilios() {
         <div className="tarjeta overflow-hidden">
           <h2 className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-4 py-3 font-semibold">
             <span>En curso ({activos.length})</span>
-            <Link href="/domiciliarios" className="text-xs font-normal text-suave hover:text-marca">
-              Domiciliarios y liquidacion →
-            </Link>
+            <span className="text-xs font-normal text-suave">
+              Los asigna despacho
+            </span>
           </h2>
           {activos.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-suave">
@@ -116,7 +114,7 @@ export default async function Domicilios() {
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold group-hover:text-marca">
-                          {p.cliente_nombre ?? `Pedido #${p.id}`}
+                          {p.cliente_nombre ?? `Orden ${numeroOrden(p.numero, p.id)}`}
                           <span className="ml-2 text-xs font-normal text-suave">
                             {p.cliente_telefono}
                           </span>
@@ -134,7 +132,7 @@ export default async function Domicilios() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-suave">
-                      #{p.id} · {transcurrido(p.creado_en)} · {p.items} items
+                      {numeroOrden(p.numero, p.id)} · {transcurrido(p.creado_en)} · {p.items} items
                       {p.domiciliario_nombre ? ` · 🛵 ${p.domiciliario_nombre}` : ''}
                     </p>
                     {p.cliente_notas && (
@@ -142,15 +140,6 @@ export default async function Domicilios() {
                     )}
                   </Link>
 
-                  <div className="mt-2">
-                    <SelectorDomiciliario
-                      pedidoId={p.id}
-                      asignadoA={p.domiciliario_id}
-                      estado={p.estado}
-                      domiciliarios={domiciliarios}
-                      conDespacho
-                    />
-                  </div>
                 </li>
               ))}
             </ul>
@@ -172,7 +161,7 @@ export default async function Domicilios() {
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold group-hover:text-marca">
-                          {p.cliente_nombre ?? `Pedido #${p.id}`}
+                          {p.cliente_nombre ?? `Orden ${numeroOrden(p.numero, p.id)}`}
                           <span className="ml-2 text-xs font-normal text-suave">
                             {p.cliente_telefono}
                           </span>
@@ -186,7 +175,7 @@ export default async function Domicilios() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-suave">
-                      #{p.id} · entregado {hora(p.cerrado_en)} · {p.items} items
+                      {numeroOrden(p.numero, p.id)} · entregado {hora(p.cerrado_en)} · {p.items} items
                       {p.domiciliario_nombre ? ` · 🛵 ${p.domiciliario_nombre}` : ''}
                     </p>
                   </Link>

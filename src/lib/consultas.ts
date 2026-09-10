@@ -295,6 +295,7 @@ export async function controlDomiciliarios(sesionId: number | null): Promise<Con
 
 export interface EntregaDelTurno {
   id: number;
+  numero: number | null;
   domiciliario_id: number;
   cliente_nombre: string | null;
   cliente_direccion: string | null;
@@ -306,7 +307,7 @@ export interface EntregaDelTurno {
 /** Una linea por entrega cobrada, para poder revisar peso por peso. */
 export async function entregasDelTurno(sesionId: number | null): Promise<EntregaDelTurno[]> {
   return planos<EntregaDelTurno>(
-    await db.all(`SELECT p.id, p.domiciliario_id, p.cliente_nombre, p.cliente_direccion,
+    await db.all(`SELECT p.id, p.numero, p.domiciliario_id, p.cliente_nombre, p.cliente_direccion,
                 p.cerrado_en,
                 COALESCE((SELECT SUM(g.monto) FROM pagos g
                            WHERE g.pedido_id = p.id), 0) AS total,
@@ -317,6 +318,33 @@ export async function entregasDelTurno(sesionId: number | null): Promise<Entrega
             AND p.estado = 'pagado'
             AND p.caja_sesion_id = ?
           ORDER BY p.cerrado_en DESC`, sesionId ?? -1),
+  );
+}
+
+/* -------------------------------------------------------- comprobantes -- */
+
+export interface Comprobante {
+  id: number;
+  pedido_id: number;
+  mime: string;
+  tamano: number;
+  nota: string | null;
+  creado_en: string;
+  subido_por: string | null;
+}
+
+/** Solo los datos, nunca los bytes: la imagen se pide aparte por su ruta. */
+export async function comprobantesDe(pedidoId: number): Promise<Comprobante[]> {
+  return planos<Comprobante>(
+    await db.all(
+      `SELECT c.id, c.pedido_id, c.mime, c.tamano, c.nota, c.creado_en,
+              u.nombre AS subido_por
+         FROM comprobantes c
+         LEFT JOIN usuarios u ON u.id = c.usuario_id
+        WHERE c.pedido_id = ?
+        ORDER BY c.id`,
+      pedidoId,
+    ),
   );
 }
 
@@ -342,6 +370,7 @@ export async function listarTurnos(): Promise<TurnoResumen[]> {
 
 export interface PedidoHistorial {
   id: number;
+  numero: number | null;
   tipo: string;
   estado: string;
   mesa_nombre: string | null;
@@ -365,7 +394,7 @@ export async function historialPedidos(sesionId: number | null, limite = 500): P
 
   return planos<PedidoHistorial>(
     await db.all(
-      `SELECT p.id, p.tipo, p.estado, p.creado_en, p.cerrado_en,
+      `SELECT p.id, p.numero, p.tipo, p.estado, p.creado_en, p.cerrado_en,
                 m.nombre AS mesa_nombre, p.cliente_nombre,
                 d.nombre AS domiciliario_nombre,
                 COALESCE((SELECT SUM(i.precio_unit * i.cantidad)

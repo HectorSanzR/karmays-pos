@@ -3,7 +3,7 @@ import { exigir } from '@/lib/sesion';
 import { notFound } from 'next/navigation';
 import { obtenerPedido } from '@/lib/consultas';
 import { negocio } from '@/lib/db';
-import { dinero, hora } from '@/lib/formato';
+import { dinero, etiquetaOrden, hora } from '@/lib/formato';
 import { BotonImprimir } from '@/components/BotonImprimir';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,9 @@ export default async function Recibo({
             <p>{datos.telefonos.join(' · ')}</p>
           ) : null}
           <p className="mt-2">
-            Pedido #{p.id} · {hora(p.creado_en)}
+            {etiquetaOrden(p.numero, p.creado_en, p.id)}
+            <br />
+            {hora(p.creado_en)}
           </p>
           <p>
             {p.mesa_nombre ?? (p.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar')}

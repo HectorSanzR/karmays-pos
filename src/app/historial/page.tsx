@@ -7,7 +7,7 @@ import {
   type PedidoHistorial,
 } from '@/lib/consultas';
 import { exigir } from '@/lib/sesion';
-import { dinero, fecha, hora, nombreMetodo } from '@/lib/formato';
+import { dinero, fecha, fechaCorta, hora, nombreMetodo, numeroOrden } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -218,7 +218,7 @@ function Fila({ p }: { p: PedidoHistorial }) {
       </td>
       <td className="px-2 py-2">
         <Link href={`/pedido/${p.id}/recibo`} className="hover:text-marca">
-          {p.id}
+          {p.numero ?? p.id}
         </Link>
       </td>
       <td className="px-2 py-2">
@@ -278,7 +278,8 @@ function TarjetaPedido({ p }: { p: PedidoHistorial }) {
         </div>
 
         <p className="mt-0.5 text-xs text-suave">
-          #{p.id} · {hora(p.cerrado_en ?? p.creado_en)} · {p.items} items ·{' '}
+          {numeroOrden(p.numero, p.id)} · {fechaCorta(p.creado_en)}{' '}
+          {hora(p.cerrado_en ?? p.creado_en)} · {p.items} items ·{' '}
           {NOMBRE_TIPO[p.tipo] ?? p.tipo}
         </p>
 

@@ -6,7 +6,7 @@ import {
   listarPedidos,
   type ResumenPedido,
 } from '@/lib/consultas';
-import { dinero, transcurrido } from '@/lib/formato';
+import { dinero, numeroOrden, transcurrido } from '@/lib/formato';
 import { EstadoChip } from '@/components/EstadoChip';
 
 export const dynamic = 'force-dynamic';
@@ -106,10 +106,10 @@ function ListaPedidos({
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">
-                    {p.mesa_nombre ?? p.cliente_nombre ?? `Pedido #${p.id}`}
+                    {p.mesa_nombre ?? p.cliente_nombre ?? `Orden ${numeroOrden(p.numero, p.id)}`}
                   </p>
                   <p className="text-xs text-suave">
-                    #{p.id} · {p.items} items · {transcurrido(p.creado_en)}
+                    {numeroOrden(p.numero, p.id)} · {p.items} items · {transcurrido(p.creado_en)}
                   </p>
                 </div>
                 <EstadoChip estado={p.estado} />

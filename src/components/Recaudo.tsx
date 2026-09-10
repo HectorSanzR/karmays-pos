@@ -3,8 +3,10 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { anularPago, fijarPropina, registrarPago } from '@/lib/acciones';
-import { dinero } from '@/lib/formato';
+import { dinero, etiquetaOrden } from '@/lib/formato';
+import { Comprobantes } from './Comprobantes';
 import type { MetodoPago, PedidoCompleto } from '@/lib/tipos';
+import type { Comprobante } from '@/lib/consultas';
 
 const METODOS: [MetodoPago, string][] = [
   ['efectivo', 'Efectivo'],
@@ -17,7 +19,13 @@ const METODOS: [MetodoPago, string][] = [
 
 const BILLETES = [5000, 10000, 20000, 50000, 100000];
 
-export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
+export function Recaudo({
+  pedido,
+  comprobantes,
+}: {
+  pedido: PedidoCompleto;
+  comprobantes: Comprobante[];
+}) {
   const { cuenta } = pedido;
   const [metodo, setMetodo] = useState<MetodoPago>('efectivo');
   const [monto, setMonto] = useState<string>(String(cuenta.saldo));
@@ -62,6 +70,10 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
             domicilios para asignarle domiciliario y despacharlo.
           </p>
         )}
+        <div className="mx-auto max-w-xs text-left">
+          <Comprobantes pedidoId={pedido.id} comprobantes={comprobantes} />
+        </div>
+
         <div className="flex flex-wrap justify-center gap-2 pt-2">
           <Link href={`/pedido/${pedido.id}/recibo`} className="btn-neutro">
             Ver recibo
@@ -103,7 +115,9 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
           <h1 className="text-lg font-bold">
             {pedido.mesa_nombre ?? pedido.cliente_nombre ?? `Pedido #${pedido.id}`}
           </h1>
-          <span className="text-sm text-suave">#{pedido.id}</span>
+          <span className="text-xs text-suave">
+            {etiquetaOrden(pedido.numero, pedido.creado_en, pedido.id)}
+          </span>
         </div>
 
         <ul className="mt-4 space-y-1 text-sm">
@@ -255,6 +269,12 @@ export function Recaudo({ pedido }: { pedido: PedidoCompleto }) {
               onChange={(e) => setReferencia(e.target.value)}
               placeholder="Opcional"
             />
+          </div>
+        )}
+
+        {metodo !== 'efectivo' && (
+          <div className="border-t border-borde pt-4">
+            <Comprobantes pedidoId={pedido.id} comprobantes={comprobantes} />
           </div>
         )}
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { exigir } from '@/lib/sesion';
 import { notFound } from 'next/navigation';
-import { cajaAbierta, obtenerPedido } from '@/lib/consultas';
+import { cajaAbierta, comprobantesDe, obtenerPedido } from '@/lib/consultas';
 import { Recaudo } from '@/components/Recaudo';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +35,7 @@ export default async function PaginaCobrar({
           </Link>
         </div>
       ) : (
-        <Recaudo pedido={pedido} />
+        <Recaudo pedido={pedido} comprobantes={await comprobantesDe(pedido.id)} />
       )}
     </div>
   );

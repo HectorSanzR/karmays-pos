@@ -17,7 +17,13 @@ export type MetodoPago =
   | 'tarjeta'
   | 'transferencia';
 
-export type Rol = 'admin' | 'cajero' | 'mesero' | 'recepcion' | 'domiciliario';
+export type Rol =
+  | 'admin'
+  | 'cajero'
+  | 'mesero'
+  | 'recepcion'
+  | 'despachador'
+  | 'domiciliario';
 
 export interface Categoria {
   id: number;
@@ -81,6 +87,10 @@ export interface PedidoItem {
 
 export interface Pedido {
   id: number;
+  /** Consecutivo que ve la gente; arranca de nuevo en cada turno de caja. */
+  numero: number | null;
+  /** Turno en que se tomo el pedido, que define su serie de numeracion. */
+  turno_id: number | null;
   tipo: TipoPedido;
   estado: EstadoPedido;
   mesa_id: number | null;

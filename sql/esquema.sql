@@ -129,6 +129,45 @@ CREATE TABLE IF NOT EXISTS pagos (
   creado_en      text NOT NULL
 );
 
+-- El numero que ve la gente. El id sigue siendo la llave interna, pero en el
+-- mostrador se habla de "la orden 3": un consecutivo que arranca de nuevo en
+-- cada turno de caja, para que no se confundan los dias.
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS numero integer;
+-- Turno en el que se tomo el pedido, que es el que define su serie de
+-- numeracion. Distinto de caja_sesion_id, que es el turno donde se cobro.
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS turno_id integer REFERENCES caja_sesiones(id);
+
+-- Los pedidos que ya existian se numeran de una vez, por turno y en el orden
+-- en que se tomaron.
+WITH numerados AS (
+  SELECT id,
+         ROW_NUMBER() OVER (PARTITION BY COALESCE(caja_sesion_id, 0) ORDER BY id) AS n
+    FROM pedidos
+   WHERE numero IS NULL
+)
+UPDATE pedidos p
+   SET numero = numerados.n,
+       turno_id = COALESCE(p.turno_id, p.caja_sesion_id)
+  FROM numerados
+ WHERE numerados.id = p.id;
+
+-- La foto del comprobante de un pago digital: la pantalla de Nequi, Bre-B o
+-- la transferencia. Se guarda en la base para no depender de otro servicio;
+-- la aplicacion la achica antes de subirla.
+CREATE TABLE IF NOT EXISTS comprobantes (
+  id         integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  pedido_id  integer NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  pago_id    integer REFERENCES pagos(id) ON DELETE SET NULL,
+  mime       text NOT NULL,
+  bytes      bytea NOT NULL,
+  tamano     integer NOT NULL,
+  nota       text,
+  usuario_id integer REFERENCES usuarios(id),
+  creado_en  text NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_comprobantes_pedido ON comprobantes (pedido_id);
+CREATE INDEX IF NOT EXISTS ix_pedidos_turno  ON pedidos (turno_id, numero);
 CREATE INDEX IF NOT EXISTS ix_pedidos_estado ON pedidos (estado);
 CREATE INDEX IF NOT EXISTS ix_pedidos_domi   ON pedidos (domiciliario_id, estado);
 CREATE INDEX IF NOT EXISTS ix_pedidos_mesa   ON pedidos (mesa_id, estado);
@@ -169,7 +208,7 @@ BEGIN
     FOREACH t IN ARRAY ARRAY[
       'categorias', 'productos', 'ingredientes', 'producto_ingredientes',
       'mesas', 'domiciliarios', 'usuarios', 'sesiones', 'intentos',
-      'caja_sesiones', 'pedidos', 'pedido_items', 'pagos'
+      'caja_sesiones', 'pedidos', 'pedido_items', 'pagos', 'comprobantes'
     ] LOOP
       EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     END LOOP;

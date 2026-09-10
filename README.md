@@ -140,7 +140,8 @@ Ese codigo se le dicta a la persona y con eso entra.
 | **Administrador** | todo, incluidos los codigos y la caja | — |
 | **Cajero** | mesas, domicilios, cobro, caja e historial | personas y codigos |
 | **Mesero** | solo mesas y comandas | domicilios, cobro, caja |
-| **Recepcion** | domicilios y asignacion de domiciliarios | mesas, cobro, caja |
+| **Recepcion** | solo toma domicilios | asignar, mesas, cobro, caja |
+| **Despacho** | asigna domicilios y ve a los domiciliarios | tomar pedidos, cobro, caja |
 | **Domiciliario** | solo *sus* entregas | absolutamente todo lo demas |
 
 El permiso es **del dia**: en Personas se apaga el acceso de quien termina su
@@ -153,18 +154,34 @@ Si un codigo se filtra, *Cambiar* le genera otro y tumba sus sesiones.
 ## Como se usa
 
 **Mesas** → se toca una mesa libre y queda abierta con su comanda. Se tocan los
-platos de la carta para agregarlos; tocando un plato ya agregado en la comanda
-se abre el detalle para cambiar cantidad, quitar ingredientes o dejar una nota
-para cocina. *Enviar a cocina* marca los platos como despachados.
+platos de la carta para agregarlos.
+
+Cada plato de la comanda se toca para abrir su detalle: ahi se cambia la
+cantidad y se arman las modificaciones. Los ingredientes rotan con un toque —
+*sin lechuga*— y con otro — *con lechuga* —, asi se pide "sin lechuga, con
+cebolla" sin escribir nada. Debajo queda el campo libre para lo que no sea un
+ingrediente: salsa aparte, bien caliente, para llevar. Todo eso se imprime tal
+cual en la comanda de cocina. *Enviar a cocina* marca los platos como
+despachados.
+
+**El numero de la orden** arranca de nuevo con cada turno de caja: al cerrar el
+turno, el proximo pedido vuelve a ser el 1. Por eso siempre se muestra con su
+fecha —*Orden #1 · 10/sep/2026*— y no hay forma de confundir la orden 5 del
+lunes con la del martes. El numero interno de la base sigue siendo otro y no
+se reutiliza; el que se dice en voz alta es este.
 
 **Domicilios** → se registran nombre, telefono, direccion y valor del domicilio,
 y de ahi se toma el pedido igual que en una mesa. El estado (en cocina, listo,
 en camino, entregado) se cambia desde la misma pantalla del pedido.
 
-**Domiciliarios** → se dan de alta una vez (nombre y telefono) y despues cada
-domicilio se les asigna desde la lista de domicilios: se elige la persona en el
-desplegable y *Despachar* lo manda a "en camino". *Quitar* saca a alguien de la
-lista sin borrar su historial.
+**Asignacion** → la pantalla de despacho, separada a proposito de la de tomar
+pedidos: quien contesta el WhatsApp no reparte las entregas. Muestra los
+domicilios en tres grupos —sin asignar, asignados sin salir, y en la calle— y
+al lado quien esta libre y quien anda con pedidos. Se elige la persona en el
+desplegable y *Despachar* lo manda a "en camino".
+
+**Domiciliarios** → se dan de alta una vez (nombre y telefono). *Quitar* saca a
+alguien de la lista sin borrar su historial.
 
 Esta pantalla es el control del turno. Arriba va el consolidado —cuanto se
 cobro en domicilios, abierto por medio de pago, cuanto efectivo hay por
@@ -199,6 +216,11 @@ pedidos uno por uno —hora, mesa o cliente, domiciliario, medio de pago, quien
 cobro y total, con los anulados tachados— y el ranking de lo que mas se
 vendio. Tocando el numero del pedido se abre su recibo.
 
+**Comprobantes** → a un pago por Nequi, Bre-B o transferencia se le puede
+adjuntar la foto de la pantalla del pago, desde la caja o desde el celular del
+domiciliario. La aplicacion la achica antes de subirla, queda guardada con el
+pedido y solo la ve quien cobra o el domiciliario de ese pedido.
+
 **Caja** → hay que abrir la caja con la base del turno antes de poder cobrar.
 Cada cobro admite efectivo (calcula el cambio), Nequi, Daviplata, tarjeta u
 otra transferencia, y se puede dividir la cuenta en varios pagos. Al cierre se
@@ -222,7 +244,9 @@ src/lib/consultas.ts    lecturas
 src/lib/acciones.ts     escrituras (server actions)
 src/app/mesas           mapa de mesas
 src/app/domicilios      alta y seguimiento de domicilios
-src/app/domiciliarios   asignacion y liquidacion por domiciliario
+src/app/asignacion      despacho: reparte los domicilios
+src/app/domiciliarios   liquidacion por domiciliario
+src/app/api/comprobante fotos de los pagos digitales
 src/app/mi-ruta         pantalla del domiciliario
 src/app/usuarios        personas, roles y codigos de acceso
 src/app/entrar          ingreso con codigo

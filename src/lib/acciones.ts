@@ -21,19 +21,32 @@ function refrescar() {
 
 /* -------------------------------------------------------- abrir pedidos -- */
 
+/**
+ * El consecutivo que ve la gente. Se calcula dentro del mismo INSERT para que
+ * dos pedidos tomados a la vez no se lleven el mismo numero, y arranca de
+ * nuevo en cada turno de caja: asi el lunes y el martes no tienen dos "orden
+ * 5" que se confundan.
+ */
+const SIGUIENTE_NUMERO = `(SELECT COALESCE(MAX(numero), 0) + 1 FROM pedidos
+     WHERE turno_id IS NOT DISTINCT FROM ?)`;
+
 /** Abre la mesa si esta libre y devuelve el id del pedido. Idempotente. */
 export async function abrirMesa(mesaId: number, comensales = 2): Promise<number> {
   const existente = await pedidoAbiertoDeMesa(mesaId);
   if (existente) return existente;
 
+  const turno = (await cajaAbierta())?.id ?? null;
   const id = await db.run(
-    `INSERT INTO pedidos (tipo, estado, mesa_id, comensales, usuario_id, creado_en)
-       VALUES ('mesa', 'abierto', ?, ?, ?, ?)
+    `INSERT INTO pedidos
+       (tipo, estado, mesa_id, comensales, usuario_id, creado_en, turno_id, numero)
+     VALUES ('mesa', 'abierto', ?, ?, ?, ?, ?, ${SIGUIENTE_NUMERO})
      RETURNING id`,
     mesaId,
     comensales,
     (await usuarioActual())?.id ?? null,
     ahora(),
+    turno,
+    turno,
   );
   refrescar();
   return id!;
@@ -48,21 +61,25 @@ export async function irAMesa(formData: FormData) {
 
 export async function crearPedidoDirecto(formData: FormData) {
   const tipo = String(formData.get('tipo') || 'domicilio') as TipoPedido;
-  const id = await db.run(`INSERT INTO pedidos
+  const turno = (await cajaAbierta())?.id ?? null;
+  const id = await db.run(
+    `INSERT INTO pedidos
          (tipo, estado, cliente_nombre, cliente_telefono, cliente_direccion,
-          cliente_notas, valor_domicilio, usuario_id, creado_en)
-       VALUES (?, 'abierto', ?, ?, ?, ?, ?, ?, ?)
+          cliente_notas, valor_domicilio, usuario_id, creado_en,
+          turno_id, numero)
+       VALUES (?, 'abierto', ?, ?, ?, ?, ?, ?, ?, ?, ${SIGUIENTE_NUMERO})
      RETURNING id`,
-
-      tipo,
-      String(formData.get('cliente_nombre') || '').trim() || null,
-      String(formData.get('cliente_telefono') || '').trim() || null,
-      String(formData.get('cliente_direccion') || '').trim() || null,
-      String(formData.get('cliente_notas') || '').trim() || null,
-      Number(formData.get('valor_domicilio') || 0),
-      (await usuarioActual())?.id ?? null,
-      ahora(),
-    );
+    tipo,
+    String(formData.get('cliente_nombre') || '').trim() || null,
+    String(formData.get('cliente_telefono') || '').trim() || null,
+    String(formData.get('cliente_direccion') || '').trim() || null,
+    String(formData.get('cliente_notas') || '').trim() || null,
+    Number(formData.get('valor_domicilio') || 0),
+    (await usuarioActual())?.id ?? null,
+    ahora(),
+    turno,
+    turno,
+  );
   refrescar();
   redirect(`/pedido/${id}`);
 }
