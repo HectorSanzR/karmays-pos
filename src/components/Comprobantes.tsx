@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { hora } from '@/lib/formato';
 import type { Comprobante } from '@/lib/consultas';
@@ -9,7 +9,7 @@ import type { Comprobante } from '@/lib/consultas';
 const LADO_MAXIMO = 1400;
 const CALIDAD = 0.7;
 
-async function achicar(archivo: File): Promise<Blob> {
+async function achicar(archivo: File | Blob): Promise<Blob> {
   const mapa = await createImageBitmap(archivo);
   const escala = Math.min(1, LADO_MAXIMO / Math.max(mapa.width, mapa.height));
 
@@ -20,11 +20,27 @@ async function achicar(archivo: File): Promise<Blob> {
 
   return new Promise((resolver, rechazar) =>
     lienzo.toBlob(
-      (b) => (b ? resolver(b) : rechazar(new Error('No se pudo procesar la foto'))),
+      (b) => (b ? resolver(b) : rechazar(new Error('No se pudo procesar la imagen'))),
       'image/jpeg',
       CALIDAD,
     ),
   );
+}
+
+/** La primera imagen que venga en un portapapeles o en un arrastre. */
+function primeraImagen(datos: DataTransfer | null): File | null {
+  if (!datos) return null;
+
+  for (const archivo of Array.from(datos.files)) {
+    if (archivo.type.startsWith('image/')) return archivo;
+  }
+  for (const item of Array.from(datos.items)) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const archivo = item.getAsFile();
+      if (archivo) return archivo;
+    }
+  }
+  return null;
 }
 
 export function Comprobantes({
@@ -37,32 +53,54 @@ export function Comprobantes({
   compacto?: boolean;
 }) {
   const [subiendo, setSubiendo] = useState(false);
+  const [arrastrando, setArrastrando] = useState(false);
   const [error, setError] = useState('');
   const entrada = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const subir = async (archivo: File) => {
-    setError('');
-    setSubiendo(true);
-    try {
-      const liviana = await achicar(archivo);
-      const cuerpo = new FormData();
-      cuerpo.set('pedido_id', String(pedidoId));
-      cuerpo.set('archivo', new File([liviana], 'comprobante.jpg', { type: 'image/jpeg' }));
+  const subir = useCallback(
+    async (archivo: File) => {
+      setError('');
+      setSubiendo(true);
+      try {
+        const liviana = await achicar(archivo);
+        const cuerpo = new FormData();
+        cuerpo.set('pedido_id', String(pedidoId));
+        cuerpo.set(
+          'archivo',
+          new File([liviana], 'comprobante.jpg', { type: 'image/jpeg' }),
+        );
 
-      const r = await fetch('/api/comprobante', { method: 'POST', body: cuerpo });
-      if (!r.ok) {
-        const datos = await r.json().catch(() => ({}));
-        throw new Error(datos.error ?? 'No se pudo guardar');
+        const r = await fetch('/api/comprobante', { method: 'POST', body: cuerpo });
+        if (!r.ok) {
+          const datos = await r.json().catch(() => ({}));
+          throw new Error(datos.error ?? 'No se pudo guardar');
+        }
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No se pudo guardar');
+      } finally {
+        setSubiendo(false);
+        if (entrada.current) entrada.current.value = '';
       }
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar');
-    } finally {
-      setSubiendo(false);
-      if (entrada.current) entrada.current.value = '';
-    }
-  };
+    },
+    [pedidoId, router],
+  );
+
+  // Pegar con Ctrl+V. En el PC la captura de pantalla ya queda en el
+  // portapapeles: obligar a guardarla en disco para despues buscarla era el
+  // paso que sobraba.
+  useEffect(() => {
+    const alPegar = (e: ClipboardEvent) => {
+      const archivo = primeraImagen(e.clipboardData);
+      if (!archivo) return;
+      e.preventDefault();
+      void subir(archivo);
+    };
+
+    document.addEventListener('paste', alPegar);
+    return () => document.removeEventListener('paste', alPegar);
+  }, [subir]);
 
   return (
     <div className="space-y-3">
@@ -108,25 +146,50 @@ export function Comprobantes({
         }}
       />
 
-      <button
-        type="button"
-        disabled={subiendo}
-        onClick={() => entrada.current?.click()}
-        className="btn-neutro w-full py-3 text-sm"
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setArrastrando(true);
+        }}
+        onDragLeave={() => setArrastrando(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setArrastrando(false);
+          const archivo = primeraImagen(e.dataTransfer);
+          if (archivo) void subir(archivo);
+          else setError('Eso que soltaste no es una imagen');
+        }}
+        className={`rounded-xl border-2 border-dashed p-3 text-center transition ${
+          arrastrando ? 'border-marca bg-marca/10' : 'border-borde'
+        }`}
       >
-        {subiendo
-          ? 'Guardando...'
-          : comprobantes.length > 0
-            ? 'Agregar otra foto'
-            : 'Adjuntar comprobante'}
-      </button>
+        <button
+          type="button"
+          disabled={subiendo}
+          onClick={() => entrada.current?.click()}
+          className="btn-neutro w-full py-3 text-sm"
+        >
+          {subiendo
+            ? 'Guardando...'
+            : comprobantes.length > 0
+              ? 'Agregar otra imagen'
+              : 'Elegir imagen o tomar foto'}
+        </button>
+
+        <p className="mt-2 text-xs text-suave">
+          {arrastrando
+            ? 'Suelta la imagen aqui'
+            : 'Tambien puedes arrastrarla aqui, o pegarla con Ctrl+V'}
+        </p>
+      </div>
 
       {error && <p className="text-sm text-alerta">{error}</p>}
 
       {!compacto && comprobantes.length === 0 && (
         <p className="text-xs text-suave">
-          La pantalla del pago de Nequi, Bre-B o la transferencia. Queda
-          guardada con el pedido, por si despues hay que mostrarla.
+          La pantalla del pago de Nequi, Bre-B o la transferencia. En el
+          computador, con Win+Shift+S recortas la pantalla y la pegas aqui de
+          una vez.
         </p>
       )}
     </div>
